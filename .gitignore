@@ -1,4 +1,6 @@
 placer
 *.o
 obj/
+.cproject
+.project
 
