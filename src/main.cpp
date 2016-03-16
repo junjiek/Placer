@@ -191,7 +191,7 @@ int main(int argc, char**argv) {
 
 	// (3) global placement
 	placement.gPlace();
-//	placement.guiFile("gplace.gnu");
+	placement.guiFile("gplace.gnu");
 
 	//DEBUG
 	cout << "[INFO:] The narrow Clusters num is : " << placement.getClusternum() << endl;
