@@ -1,3 +1,4 @@
-./placer
+placer
 *.o
+obj/
 
