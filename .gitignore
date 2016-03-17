@@ -3,4 +3,5 @@ placer
 obj/
 .cproject
 .project
+*.eps
 
