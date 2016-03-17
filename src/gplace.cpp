@@ -1038,11 +1038,11 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 
 	//DEBUG
 	if (step >= 1) {
-		cout << overfilledBins.size() << endl;
+		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
-		cout << i << ' ' << overfilledBins[i].element << endl;
-				gridSize*overfilledBins[i].row << ' ' <<
-				gridSize*overfilledBins[i].column << endl;
+		// cout << i << ' ' << overfilledBins[i].element << endl;
+		// 		gridSize*overfilledBins[i].row << ' ' <<
+		// 		gridSize*overfilledBins[i].column << endl;
 		guiClustersGroup("Cluster_group.gnu", clusters , overfilledBins);
 		cout << "OK! " << endl;
 		cin >> TEST;
