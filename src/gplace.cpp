@@ -3176,7 +3176,7 @@ void SimPlPlace::guiRectGroup(const char* fname, vector<Rect>& rects) {
 					<< insts[j] -> getCoordY() << "   " << endl;
 			cFile << endl << endl;
 		} else {
-			fixFile << "# Cell Name " << name << endl;
+			fixFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			fixFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
