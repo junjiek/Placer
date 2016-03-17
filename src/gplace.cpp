@@ -1027,28 +1027,26 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 			//checkOrder(newCluster->moveInstsX, true);
 			//checkOrder(newCluster->moveInstsY, false);
 			clusters.push_back(newCluster);
-
-			//DEBUG
-			if (step >= 1) {
-//				cout << overfilledBins.size() << endl;
-				cout << "lookAheadLegalize: step " << step << endl;
-//				cout << i << ' ' << overfilledBins[i].element << endl;
-//						gridSize*overfilledBins[i].row << ' ' <<
-//						gridSize*overfilledBins[i].column << endl;
-				guiClustersGroup("Cluster_group.gnu", clusters , overfilledBins);
-				cout << "OK! " << endl;
-				cin >> TEST;
-			}
 		} else {
 			delete newCluster;
 		}
 	}
 
-
-
 //	ofstream numC("numCluster", ios_base::out | ios_base::app);
 	cout << "[INFO] : numCluster = " << clusters.size() << endl;
 //	numC << clusters.size() << endl;
+
+	//DEBUG
+	if (step >= 1) {
+		cout << overfilledBins.size() << endl;
+		cout << "lookAheadLegalize: step " << step << endl;
+		cout << i << ' ' << overfilledBins[i].element << endl;
+				gridSize*overfilledBins[i].row << ' ' <<
+				gridSize*overfilledBins[i].column << endl;
+		guiClustersGroup("Cluster_group.gnu", clusters , overfilledBins);
+		cout << "OK! " << endl;
+		cin >> TEST;
+	}
 
 	//DEBUG for narrow boundingBox
 //	cout<<clusters[0]->left<<" "<<clusters[0]->right<<" "<<clusters[0]->bottom<<" "<<clusters[0]->top<<endl;
