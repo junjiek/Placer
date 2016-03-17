@@ -2901,8 +2901,7 @@ void SimPlPlace::guiFile(const char* fname) {
 	string name;
 	for (j = 0; j < (long) insts.size(); j++) {
 		if (insts[j]->getStatus() == Moved) {
-			inPlName >> name;
-			cFile << "# Cell Name " << name << endl;
+			cFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			cFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -2918,8 +2917,7 @@ void SimPlPlace::guiFile(const char* fname) {
 					<< insts[j] -> getCoordY() << "   " << endl;
 			cFile << endl << endl;
 		} else {
-			inPlName >> name;
-			fixFile << "# Cell Name " << name << endl;
+			fixFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			fixFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
