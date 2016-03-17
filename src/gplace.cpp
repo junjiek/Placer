@@ -2874,7 +2874,6 @@ void SimPlPlace::saveOldPos() {
 
 void SimPlPlace::guiFile(const char* fname) {
 	ofstream gpFile(fname);
-	ifstream inPlName("instName.tmp");
 	string cell = string(fname) + "_cell";
 	string obstacle = string(fname) + "_fix";
 	gpFile << "set title \" ------Placement Result------ \"" << endl;
@@ -2898,7 +2897,6 @@ void SimPlPlace::guiFile(const char* fname) {
 	vector<Inst*> &insts = plcTopBlock->getInsts();
 	gpFile << endl << endl;
 	long j;
-	string name;
 	for (j = 0; j < (long) insts.size(); j++) {
 		if (insts[j]->getStatus() == Moved) {
 			cFile << "# Cell Name " << insts[j]->getName() << endl;
@@ -2935,7 +2933,6 @@ void SimPlPlace::guiFile(const char* fname) {
 		}
 
 	}
-	inPlName.close();
 	cFile.close();
 	fixFile.close();
 	gpFile.close();
@@ -2943,7 +2940,6 @@ void SimPlPlace::guiFile(const char* fname) {
 
 void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long x2, long y1, long y2) {
 	ofstream gpFile(fname);
-	ifstream inPlName("instName.tmp");
 	string cell = string(fname) + "_cell";
 	string obstacle = string(fname) + "_fix";
 	string rects = string(fname) + "_region";
@@ -2970,11 +2966,9 @@ void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long
 	vector<Inst*> &insts = plcTopBlock->getInsts();
 	gpFile << endl << endl;
 	long j;
-	string name;
 	for (j = 0; j < (long) insts.size(); j++) {
 		if (insts[j]->getStatus() == Moved) {
-			inPlName >> name;
-			cFile << "# Cell Name " << name << endl;
+			cFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			cFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -2990,8 +2984,7 @@ void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long
 					<< insts[j] -> getCoordY() << "   " << endl;
 			cFile << endl << endl;
 		} else {
-			inPlName >> name;
-			fixFile << "# Cell Name " << name << endl;
+			fixFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			fixFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -3036,12 +3029,10 @@ void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long
 	fixFile.close();
 	rectFile.close();
 	gpFile.close();
-	inPlName.close();
 }
 
 void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , vector<Triple>& overf) {
 	ofstream gpFile(fname);
-	ifstream inPlName("instName.tmp");
 	string cell = string(fname) + "_cell";
 	string obstacle = string(fname) + "_fix";
 	string rect = string(fname) + "_region";
@@ -3069,11 +3060,9 @@ void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , v
 	vector<Inst*> &insts = plcTopBlock->getInsts();
 	gpFile << endl << endl;
 	long j;
-	string name;
 	for (j = 0; j < (long) insts.size(); j++) {
 		if (insts[j]->getStatus() == Moved) {
-			inPlName >> name;
-			cFile << "# Cell Name " << name << endl;
+			cFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			cFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -3089,8 +3078,7 @@ void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , v
 					<< insts[j] -> getCoordY() << "   " << endl;
 			cFile << endl << endl;
 		} else {
-			inPlName >> name;
-			fixFile << "# Cell Name " << name << endl;
+			fixFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			fixFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -3144,12 +3132,10 @@ void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , v
 	rectFile.close();
 	binFile.close();
 	gpFile.close();
-	inPlName.close();
 }
 
 void SimPlPlace::guiRectGroup(const char* fname, vector<Rect>& rects) {
 	ofstream gpFile(fname);
-	ifstream inPlName("instName.tmp");
 	string cell = string(fname) + "_cell";
 	string obstacle = string(fname) + "_fix";
 	string rect = string(fname) + "_region";
@@ -3172,11 +3158,9 @@ void SimPlPlace::guiRectGroup(const char* fname, vector<Rect>& rects) {
 	vector<Inst*> &insts = plcTopBlock->getInsts();
 	gpFile << endl << endl;
 	long j;
-	string name;
 	for (j = 0; j < (long) insts.size(); j++) {
 		if (insts[j]->getStatus() == Moved) {
-			inPlName >> name;
-			cFile << "# Cell Name " << name << endl;
+			cFile << "# Cell Name " << insts[j]->getName() << endl;
 
 			cFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
 					<< insts[j] -> getCoordY() << "   " << endl;
@@ -3192,7 +3176,6 @@ void SimPlPlace::guiRectGroup(const char* fname, vector<Rect>& rects) {
 					<< insts[j] -> getCoordY() << "   " << endl;
 			cFile << endl << endl;
 		} else {
-			inPlName >> name;
 			fixFile << "# Cell Name " << name << endl;
 
 			fixFile << setw(10) << insts[j] -> getCoordX() << "  " << setw(10)
@@ -3230,7 +3213,6 @@ void SimPlPlace::guiRectGroup(const char* fname, vector<Rect>& rects) {
 	fixFile.close();
 	rectFile.close();
 	gpFile.close();
-	inPlName.close();
 }
 
 void SimPlPlace::checkOrder(vector<Inst*> insts, bool horizontal) {
