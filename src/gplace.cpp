@@ -1786,14 +1786,15 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 			long m = 0;
 			L->cellArea = R->cellArea = 0.0;
 			for (; m < (long) F->moveInstsX.size(); ++m) {
+				pivot -= F->moveInstsX[m]->getArea();
+				L->moveInstsX.push_back(F->moveInstsX[m]);
+				L->cellArea += F->moveInstsX[m]->getArea();
 				if (pivot <= 0) {
 					cellCutline = F->moveInstsX[m]->getCenterX();
 					break;
 				}
-				pivot -= F->moveInstsX[m]->getArea();
-				L->moveInstsX.push_back(F->moveInstsX[m]);
-				L->cellArea += F->moveInstsX[m]->getArea();
 			}
+			cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
 			for (++m; m < (long) F->moveInstsX.size(); ++m) {
 				R->moveInstsX.push_back(F->moveInstsX[m]);
 				R->cellArea += F->moveInstsX[m]->getArea();
@@ -1881,14 +1882,15 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 			long m = 0;
 			B->cellArea = T->cellArea = 0.0;
 			for (; m < (long) F->moveInstsY.size(); ++m) {
+				pivot -= F->moveInstsY[m]->getArea();
+				B->moveInstsY.push_back(F->moveInstsY[m]);
+				B->cellArea += F->moveInstsY[m]->getArea();
 				if (pivot <= 0) {
 					cellCutline = F->moveInstsY[m]->getCenterY();
 					break;
 				}
-				pivot -= F->moveInstsY[m]->getArea();
-				B->moveInstsY.push_back(F->moveInstsY[m]);
-				B->cellArea += F->moveInstsY[m]->getArea();
 			}
+			cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
 			for (++m; m < (long) F->moveInstsY.size(); ++m) {
 				T->moveInstsY.push_back(F->moveInstsY[m]);
 				T->cellArea += F->moveInstsY[m]->getArea();
