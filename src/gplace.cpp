@@ -1037,7 +1037,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	numC << clusters.size() << endl;
 
 	//DEBUG
-	if (step >= 1) {
+	if (step == 22) {
 		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
 		// cout << i << ' ' << overfilledBins[i].element << endl;
@@ -1785,73 +1785,94 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 			double cellCutline;
 			long m = 0;
 			L->cellArea = R->cellArea = 0.0;
+			// bool debug = (F->moveInstsX.size() == 51);
+			// if (debug)
+			// 	cout << "=======\npivot: " << pivot << ", F_avl:" << F->availableArea
+			// 		 << ", F_cell" << F->cellArea << ", B_avl: "
+			// 		 << L->availableArea << endl;
 			for (; m < (long) F->moveInstsX.size(); ++m) {
 				pivot -= F->moveInstsX[m]->getArea();
 				L->moveInstsX.push_back(F->moveInstsX[m]);
 				L->cellArea += F->moveInstsX[m]->getArea();
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterX: " << F->moveInstsX[m]->getCenterX() << endl;
+				cellCutline = F->moveInstsX[m]->getCenterX();
 				if (pivot <= 0) {
-					cellCutline = F->moveInstsX[m]->getCenterX();
 					break;
 				}
 			}
-			cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
+			// if (debug)
+			// 	cout << "---- cellCutline: " << cellCutline << ", m: " << m << endl;
 			for (++m; m < (long) F->moveInstsX.size(); ++m) {
-				R->moveInstsX.push_back(F->moveInstsX[m]);
-				R->cellArea += F->moveInstsX[m]->getArea();
-			}
-
-			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
-				if (F->fixInsts[i]->getCoordX() < cellCutline) {
-					L->fixInsts.push_back(F->fixInsts[i]);
-				}
-				if (F->fixInsts[i]->getCoordX() + F->fixInsts[i]->getWidth() > cellCutline) {
-					R->fixInsts.push_back(F->fixInsts[i]);
-				}
-			}
-			for (long i = 0; i < (long) F->moveInstsY.size(); ++i) {
-				if (F->moveInstsY[i]->getCenterX() <= cellCutline) {
-					L->moveInstsY.push_back(F->moveInstsY[i]);
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterX: " << F->moveInstsX[m]->getCenterX() << endl;
+				if (F->moveInstsX[m]->getCenterX() <= cellCutline) {
+					L->moveInstsX.push_back(F->moveInstsX[m]);
+					L->cellArea += F->moveInstsX[m]->getArea();
 				} else {
-					R->moveInstsY.push_back(F->moveInstsY[i]);
-				}
-			}
-			assert(R->moveInstsX.size() == R->moveInstsY.size());
-			assert(L->moveInstsX.size() == L->moveInstsY.size());
-
-		} else {
-			L->availableArea = 0.0;
-			R->availableArea = 0.0;
-			long m = 0;
-			L->cellArea = R->cellArea = 0.0;
-			for (; m < (long) F->moveInstsX.size() / 2; ++m) {
-				L->moveInstsX.push_back(F->moveInstsX[m]);
-				L->cellArea += F->moveInstsX[m]->getArea();
-			}
-			double cellCutline = F->right;
-			if (F->moveInstsX.size() > 0) {
-				cellCutline = F->moveInstsX[m]->getCenterX();
-				for (++m; m < (long) F->moveInstsX.size(); ++m) {
 					R->moveInstsX.push_back(F->moveInstsX[m]);
 					R->cellArea += F->moveInstsX[m]->getArea();
 				}
 			}
-			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
-				if (F->fixInsts[i]->getCoordX() < cellCutline) {
-					L->fixInsts.push_back(F->fixInsts[i]);
-				}
-				if (F->fixInsts[i]->getCoordX() + F->fixInsts[i]->getWidth() > cellCutline) {
-					R->fixInsts.push_back(F->fixInsts[i]);
-				}
-			}
 			for (long i = 0; i < (long) F->moveInstsY.size(); ++i) {
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterX: " << F->moveInstsY[i]->getCenterX() << endl;
 				if (F->moveInstsY[i]->getCenterX() <= cellCutline) {
 					L->moveInstsY.push_back(F->moveInstsY[i]);
 				} else {
 					R->moveInstsY.push_back(F->moveInstsY[i]);
 				}
 			}
+			// if (debug) {
+			// 	cout << F->moveInstsX.size() << ": (" << R->moveInstsX.size()
+			// 		 << ", " << R->moveInstsY.size() << "), ("
+			// 		 << L->moveInstsX.size() << ", " << L->moveInstsY.size()
+			// 		 << ")" << endl;
+			// }
 			assert(R->moveInstsX.size() == R->moveInstsY.size());
 			assert(L->moveInstsX.size() == L->moveInstsY.size());
+
+		} else {
+			// cout << "No space1: " << F->moveInstsY.size() << endl;
+			L->availableArea = 0.0;
+			R->availableArea = 0.0;
+			long m = 0;
+			L->cellArea = R->cellArea = 0.0;
+			if (F->moveInstsX.size() > 0) {
+				double cellCutline;
+				for (; m <= (long) F->moveInstsX.size() / 2; ++m) {
+					L->moveInstsX.push_back(F->moveInstsX[m]);
+					L->cellArea += F->moveInstsX[m]->getArea();
+					cellCutline = F->moveInstsX[m]->getCenterX();
+				}
+				// cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
+				for (; m < (long) F->moveInstsX.size(); ++m) {
+					if (F->moveInstsX[m]->getCenterX() <= cellCutline) {
+						L->moveInstsX.push_back(F->moveInstsX[m]);
+						L->cellArea += F->moveInstsX[m]->getArea();
+					} else {
+						R->moveInstsX.push_back(F->moveInstsX[m]);
+						R->cellArea += F->moveInstsX[m]->getArea();
+					}
+				}
+				for (long i = 0; i < (long) F->moveInstsY.size(); ++i) {
+					if (F->moveInstsY[i]->getCenterX() <= cellCutline) {
+						L->moveInstsY.push_back(F->moveInstsY[i]);
+					} else {
+						R->moveInstsY.push_back(F->moveInstsY[i]);
+					}
+				}
+			}
+			assert(R->moveInstsX.size() == R->moveInstsY.size());
+			assert(L->moveInstsX.size() == L->moveInstsY.size());
+		}
+		for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
+			if (F->fixInsts[i]->getCoordX() < cutline) {
+				L->fixInsts.push_back(F->fixInsts[i]);
+			}
+			if (F->fixInsts[i]->getCoordX() + F->fixInsts[i]->getWidth() > cutline) {
+				R->fixInsts.push_back(F->fixInsts[i]);
+			}
 		}
 		Q_next.push_back(L);
 		Q_next.push_back(R);
@@ -1876,8 +1897,13 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 					B->availableArea += bins[i][j]->availableArea;
 				}
 			}
+			// bool debug = (F->moveInstsY.size() == 11);
 			T->availableArea = F->availableArea - B->availableArea;
 			double pivot = F->cellArea * B->availableArea / F->availableArea;
+			// if (debug)
+			// 	cout << "pivot: " << pivot << ", F_avl:" << F->availableArea
+			// 		 << ", F_cell" << F->cellArea << ", B_avl: "
+			// 		 << B->availableArea << endl;
 			double cellCutline;
 			long m = 0;
 			B->cellArea = T->cellArea = 0.0;
@@ -1885,69 +1911,85 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 				pivot -= F->moveInstsY[m]->getArea();
 				B->moveInstsY.push_back(F->moveInstsY[m]);
 				B->cellArea += F->moveInstsY[m]->getArea();
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterY: " << F->moveInstsY[m]->getCenterY() << endl;
+				cellCutline = F->moveInstsY[m]->getCenterY();
 				if (pivot <= 0) {
-					cellCutline = F->moveInstsY[m]->getCenterY();
 					break;
 				}
 			}
-			cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
+			// if (debug)
+			// 	cout << "---- cellCutline: " << cellCutline << ", m: " << m << endl;
 			for (++m; m < (long) F->moveInstsY.size(); ++m) {
-				T->moveInstsY.push_back(F->moveInstsY[m]);
-				T->cellArea += F->moveInstsY[m]->getArea();
-			}
-
-			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
-				if (F->fixInsts[i]->getCoordY() < cellCutline) {
-					B->fixInsts.push_back(F->fixInsts[i]);
-				}
-				if (F->fixInsts[i]->getCoordY() + F->fixInsts[i]->getHeight() > cellCutline) {
-					T->fixInsts.push_back(F->fixInsts[i]);
-				}
-			}
-			for (long i = 0; i < (long) F->moveInstsX.size(); ++i) {
-				if (F->moveInstsX[i]->getCenterY() <= cellCutline) {
-					B->moveInstsX.push_back(F->moveInstsX[i]);
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterY: " << F->moveInstsY[m]->getCenterY() << endl;
+				if (F->moveInstsY[m]->getCenterY() <= cellCutline) {
+					B->moveInstsY.push_back(F->moveInstsY[m]);
+					B->cellArea += F->moveInstsY[m]->getArea();
 				} else {
-					T->moveInstsX.push_back(F->moveInstsX[i]);
-				}
-			}
-			assert(B->moveInstsX.size() == B->moveInstsY.size());
-			assert(T->moveInstsX.size() == T->moveInstsY.size());
-
-		} else {
-			B->availableArea = 0.0;
-			T->availableArea = 0.0;
-			long m = 0;
-			B->cellArea = T->cellArea = 0.0;
-			for (; m < (long) F->moveInstsY.size() / 2; ++m) {
-				B->moveInstsY.push_back(F->moveInstsY[m]);
-				B->cellArea += F->moveInstsY[m]->getArea();
-			}
-			double cellCutline = F->top;
-			if (F->moveInstsY.size() > 0) {
-				cellCutline = F->moveInstsY[m]->getCenterY();
-				for (++m; m < (long) F->moveInstsY.size(); ++m) {
 					T->moveInstsY.push_back(F->moveInstsY[m]);
 					T->cellArea += F->moveInstsY[m]->getArea();
 				}
 			}
-			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
-				if (F->fixInsts[i]->getCoordY() < cellCutline) {
-					B->fixInsts.push_back(F->fixInsts[i]);
-				}
-				if (F->fixInsts[i]->getCoordY() + F->fixInsts[i]->getHeight() > cellCutline) {
-					T->fixInsts.push_back(F->fixInsts[i]);
-				}
-			}
 			for (long i = 0; i < (long) F->moveInstsX.size(); ++i) {
+				// if (debug)
+				// 	cout << "m: " << m << ", CenterY: " << F->moveInstsX[i]->getCenterY() << endl;
 				if (F->moveInstsX[i]->getCenterY() <= cellCutline) {
 					B->moveInstsX.push_back(F->moveInstsX[i]);
 				} else {
 					T->moveInstsX.push_back(F->moveInstsX[i]);
 				}
 			}
+			// if (debug) {
+			// 	cout << F->moveInstsX.size() << ": (" << B->moveInstsX.size()
+			// 		 << ", " << B->moveInstsY.size() << "), ("
+			// 		 << T->moveInstsX.size() << ", " << T->moveInstsY.size()
+			// 		 << ")" << endl;
+			// }
 			assert(B->moveInstsX.size() == B->moveInstsY.size());
 			assert(T->moveInstsX.size() == T->moveInstsY.size());
+
+		} else {
+			// cout << "No space2: " << F->moveInstsY.size() << endl;
+			B->availableArea = 0.0;
+			T->availableArea = 0.0;
+			B->cellArea = T->cellArea = 0.0;
+			if (F->moveInstsY.size() > 0) {
+				long m = 0;
+				double cellCutline;
+				for (; m <= (long) F->moveInstsY.size() / 2; ++m) {
+					B->moveInstsY.push_back(F->moveInstsY[m]);
+					B->cellArea += F->moveInstsY[m]->getArea();
+				 	cellCutline = F->moveInstsY[m]->getCenterY();
+				}
+				// cout << "cellCutline: " << cellCutline << ", m: " << m << endl;
+				for (; m < (long) F->moveInstsY.size(); ++m) {
+					if (F->moveInstsY[m]->getCenterY() <= cellCutline) {
+						B->moveInstsY.push_back(F->moveInstsY[m]);
+						B->cellArea += F->moveInstsY[m]->getArea();
+					} else {
+						T->moveInstsY.push_back(F->moveInstsY[m]);
+						T->cellArea += F->moveInstsY[m]->getArea();
+					}
+				}
+				for (long i = 0; i < (long) F->moveInstsX.size(); ++i) {
+					if (F->moveInstsX[i]->getCenterY() <= cellCutline) {
+						B->moveInstsX.push_back(F->moveInstsX[i]);
+					} else {
+						T->moveInstsX.push_back(F->moveInstsX[i]);
+					}
+				}
+			}
+			assert(B->moveInstsX.size() == B->moveInstsY.size());
+			assert(T->moveInstsX.size() == T->moveInstsY.size());
+		}
+		for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
+			if (F->fixInsts[i]->getCoordY() < cutline) {
+				B->fixInsts.push_back(F->fixInsts[i]);
+			}
+			if (F->fixInsts[i]->getCoordY() + F->fixInsts[i]->getHeight() > cutline) {
+				T->fixInsts.push_back(F->fixInsts[i]);
+			}
 		}
 		Q_next.push_back(B);
 		Q_next.push_back(T);
@@ -1956,8 +1998,8 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 }
 
 void SimPlPlace::moveCellsToBin(RLRegion* bin) {
-	assert(bin->gridRight - bin->gridLeft == 1);
-	assert(bin->gridTop - bin->gridBottom == 1);
+	assert(bin->gridRight == bin->gridLeft);
+	assert(bin->gridTop == bin->gridBottom);
 	assert(bin->moveInstsX.size() == bin->moveInstsY.size());
 
 	long binCenterX = (bin->left + bin->right) / 2;
@@ -1966,7 +2008,6 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin) {
 		bin->moveInstsX[i]->setCoordX(binCenterX);
 		bin->moveInstsX[i]->setCoordY(binCenterY);
 	}
-	delete bin;
 }
 
 void SimPlPlace::cellDistribution(RLRegion* rect) {
@@ -1987,14 +2028,14 @@ void SimPlPlace::cellDistribution(RLRegion* rect) {
 			Q.pop();
 			long w = F->gridRight - F->gridLeft + 1;
 			long h = F->gridTop - F->gridBottom + 1;
-			if ((vertical && w == 1 && h == 2)
-				|| (!vertical && w == 2 && h == 1)) {
-				// F is a 1x2 (2x1) gird && the cut is vertical (horizontal)
-				Q_next.push_back(F);
-			} else if (w == 1 || h == 1) {
+			if (w == 1 && h == 1) {
 				// F is a bin
 				moveCellsToBin(F);
-			} else  {
+				delete F;
+			} else if ((vertical && w == 1)|| (!vertical && h == 1)) {
+				// F is a 1xn (nx1) gird && the cut is vertical (horizontal)
+				Q_next.push_back(F);
+			} else {
 				// F is not a bin
 				divide(F, vertical, Q_next);
 				delete F;
