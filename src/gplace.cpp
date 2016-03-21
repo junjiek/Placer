@@ -1037,7 +1037,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	numC << clusters.size() << endl;
 
 	//DEBUG
-	if (step == 22) {
+	if (0) {
 		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
 		// cout << i << ' ' << overfilledBins[i].element << endl;
