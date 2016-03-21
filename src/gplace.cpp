@@ -1792,11 +1792,11 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 				}
 				pivot -= F->moveInstsX[m]->getArea();
 				L->moveInstsX.push_back(F->moveInstsX[m]);
-				L->cellArea += F->moveInstsX[m].getArea();
+				L->cellArea += F->moveInstsX[m]->getArea();
 			}
 			for (++m; m < (long) F->moveInstsX.size(); ++m) {
 				R->moveInstsX.push_back(F->moveInstsX[m]);
-				R->cellArea += F->moveInstsX[m].getArea();
+				R->cellArea += F->moveInstsX[m]->getArea();
 			}
 
 			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
@@ -1824,14 +1824,14 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 			L->cellArea = R->cellArea = 0.0;
 			for (; m < (long) F->moveInstsX.size() / 2; ++m) {
 				L->moveInstsX.push_back(F->moveInstsX[m]);
-				L->cellArea += F->moveInstsX[m].getArea();
+				L->cellArea += F->moveInstsX[m]->getArea();
 			}
 			double cellCutline = F->right;
 			if (F->moveInstsX.size() > 0) {
 				cellCutline = F->moveInstsX[m]->getCenterX();
 				for (++m; m < (long) F->moveInstsX.size(); ++m) {
 					R->moveInstsX.push_back(F->moveInstsX[m]);
-					R->cellArea += F->moveInstsX[m].getArea();
+					R->cellArea += F->moveInstsX[m]->getArea();
 				}
 			}
 			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
@@ -1887,11 +1887,11 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 				}
 				pivot -= F->moveInstsY[m]->getArea();
 				B->moveInstsY.push_back(F->moveInstsY[m]);
-				B->cellArea += F->moveInstsY[m].getArea();
+				B->cellArea += F->moveInstsY[m]->getArea();
 			}
 			for (++m; m < (long) F->moveInstsY.size(); ++m) {
 				T->moveInstsY.push_back(F->moveInstsY[m]);
-				T->cellArea += F->moveInstsY[m].getArea();
+				T->cellArea += F->moveInstsY[m]->getArea();
 			}
 
 			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
@@ -1919,14 +1919,14 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 			B->cellArea = T->cellArea = 0.0;
 			for (; m < (long) F->moveInstsY.size() / 2; ++m) {
 				B->moveInstsY.push_back(F->moveInstsY[m]);
-				B->cellArea += F->moveInstsY[m].getArea();
+				B->cellArea += F->moveInstsY[m]->getArea();
 			}
 			double cellCutline = F->top;
 			if (F->moveInstsY.size() > 0) {
 				cellCutline = F->moveInstsY[m]->getCenterY();
 				for (++m; m < (long) F->moveInstsY.size(); ++m) {
 					T->moveInstsY.push_back(F->moveInstsY[m]);
-					T->cellArea += F->moveInstsY[m].getArea();
+					T->cellArea += F->moveInstsY[m]->getArea();
 				}
 			}
 			for (long i = 0; i < (long) F->fixInsts.size(); ++i) {
