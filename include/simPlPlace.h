@@ -173,6 +173,9 @@ public:
 	myPoint getBary(vector<myPoint>& overfilledPoint);
 
 	void lookAheadLegalize(long h, long v, long step);
+	void divide(const RLRegion* r, const bool vertical, vector<RLRegion*>& Q_next);
+	void moveCellsToBin(RLRegion* bin);
+	void cellDistribution(RLRegion* rect);
 	void diffusion(RLRegion* rect, int level);
 	void getStripsUsage(vector<long>& borders, vector<Inst*>& obstacles,
 			vector<double>& whiteSpace, long boundary1, long boundary2,
