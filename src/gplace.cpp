@@ -1037,15 +1037,16 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	numC << clusters.size() << endl;
 
 	//DEBUG
-	if (0) {
+	bool debug = step == 20;
+	if (debug) {
 		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup("Cluster_group.gnu", clusters , overfilledBins);
+		guiClustersGroup("Cluster_group1.gnu", clusters , overfilledBins);
 		cout << "OK! " << endl;
-		cin >> TEST;
+		// cin >> TEST;
 	}
 
 	//DEBUG for narrow boundingBox
@@ -1114,6 +1115,16 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		linearDiffusion(clusters[i], step);
 	}
 	//cout << "Finish Rough Legalization " << endl;
+	if (debug) {
+		// cout << overfilledBins.size() << endl;
+		cout << "lookAheadLegalize: step " << step << endl;
+		// cout << i << ' ' << overfilledBins[i].element << endl;
+		// 		gridSize*overfilledBins[i].row << ' ' <<
+		// 		gridSize*overfilledBins[i].column << endl;
+		guiClustersGroup("Cluster_group2.gnu", clusters , overfilledBins);
+		cout << "OK! " << endl;
+		// cin >> TEST;
+	}
 }
 #endif
 
@@ -2053,112 +2064,172 @@ void SimPlPlace::cellDistribution(RLRegion* rect) {
 	}
 }
 
-double distToBoundingBox(
+void calBoundingBoxIntersection(
 		const double rectCenterX, const double rectCenterY,
-		const double deltaX, const double deltaY, RLRegion* boundingBox) {
+		const double deltaX, const double deltaY, const RLRegion* boundingBox,
+		double* intersectX, double* intersectY) {
+	if (abs(deltaX) <= 10e-6) {
+		*intersectX = rectCenterX;
+		if (deltaY > 0) {
+			*intersectY = boundingBox->top;
+		} else {
+			*intersectY = boundingBox->bottom;
+		}
+		return;
+	}
+	if (abs(deltaY) <= 10e-6) {
+		*intersectY = rectCenterY;
+		if (deltaX > 0) {
+			*intersectX = boundingBox->right;
+		} else {
+			*intersectX = boundingBox->left;
+		}
+		return;
+	}
+	// View (rectCenterX, rectCenterY) as Origin
 	double rightX = boundingBox->right - rectCenterX;
 	double leftX = boundingBox->left - rectCenterX;
 	double topY = boundingBox->top - rectCenterY;
 	double bottomY = boundingBox->bottom - rectCenterY;
 
-	if (abs(deltaX) <= 10e-6) {
-		if (deltaY > 0) {
-			return topY - deltaY;
-		} else {
-			return deltaY - bottomY;
-		}
-	}
-	if (abs(deltaY) <= 10e-6) {
-		if (deltaX > 0) {
-			return rightX - deltaX;
-		} else {
-			return deltaX - leftX;
-		}
-	}
 	double slope = deltaY / deltaX;
-	double intersectX, intersectY;
 	if (deltaX > 0 && deltaY > 0) {
 		// Intersects with right or top bound.
 		double rightY = slope * rightX;
 		if (rightY <= topY && rightY >= bottomY) {
-			intersectX = rightX;
-			intersectY = rightY;
+			*intersectX = rightX;
+			*intersectY = rightY;
 		} else {
 			double topX = topY / slope;
-			intersectX = topX;
-			intersectY = topY;
+			*intersectX = topX;
+			*intersectY = topY;
 		}
 	} else if (deltaX < 0 && deltaY < 0) {
 		// Intersects with left or bottom bound.
 		double leftY = slope * leftX;
 		if (leftY <= topY && leftY >= bottomY) {
-			intersectX = leftX;
-			intersectY = leftY;
+			*intersectX = leftX;
+			*intersectY = leftY;
 		} else {
 			double bottomX = bottomY / slope;
-			intersectX = bottomX;
-			intersectY = bottomY;
+			*intersectX = bottomX;
+			*intersectY = bottomY;
 		}
 	} else if (deltaX > 0 && deltaY < 0) {
 		// Intersects with right or bottom bound.
 		double rightY = slope * rightX;
 		if (rightY <= topY && rightY >= bottomY) {
-			intersectX = rightX;
-			intersectY = rightY;
+			*intersectX = rightX;
+			*intersectY = rightY;
 		} else {
 			double bottomX = bottomY / slope;
-			intersectX = bottomX;
-			intersectY = bottomY;
+			*intersectX = bottomX;
+			*intersectY = bottomY;
 		}
 	} else {
 		// Intersects with left or top bound.
 		double leftY = slope * leftX;
 		if (leftY <= topY && leftY >= bottomY) {
-			intersectX = leftX;
-			intersectY = leftY;
+			*intersectX = leftX;
+			*intersectY = leftY;
 		} else {
 			double topX = topY / slope;
-			intersectX = topX;
-			intersectY = topY;
+			*intersectX = topX;
+			*intersectY = topY;
 		}
 	}
-	return sqrt((intersectX - deltaX) * (intersectX - deltaX)
-		   		+ (intersectY - deltaY) * (intersectY - deltaY));
+	*intersectX += rectCenterX;
+	*intersectY += rectCenterY;
 }
 
 void SimPlPlace::linearDiffusion(RLRegion* rect, long step) {
 	// TODO: change to whitespace center
 	long rectCenterX = (rect->left + rect->right) / 2;
 	long rectCenterY = (rect->top + rect->bottom) / 2;
-
+	double ratio = 0.95;
+	double paddingArea1 = (1 - ratio) * rect->getCellArea() / 2;
+	double paddingArea2 = (1 + ratio) * rect->getCellArea() / 2;
 	double halfCellArea = rect->getCellArea() / 2;
+
+	assert(halfCellArea > paddingArea1);
+	assert(paddingArea2 > halfCellArea);
+
 	double cellCenterX, cellCenterY;
-	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
-		halfCellArea -= rect->moveInstsX[i]->getArea();
-		cellCenterX = rect->moveInstsX[i]->getCenterX();
-		if (halfCellArea <= 0) {
+	double denseLeft, denseRight, denseTop, denseBottom;
+	double sum = 0.0;
+	long i = 0;
+	for (; i < (long) rect->moveInstsX.size(); ++i) {
+		sum += rect->moveInstsX[i]->getArea();
+		if (sum >= paddingArea1) {
+			denseLeft = rect->moveInstsX[i]->getCenterX();
 			break;
 		}
 	}
-	halfCellArea = rect->getCellArea() / 2;
-	for (long i = 0; i < (long) rect->moveInstsY.size(); ++i) {
-		halfCellArea -= rect->moveInstsY[i]->getArea();
-		cellCenterY = rect->moveInstsY[i]->getCenterY();
-		if (halfCellArea <= 0) {
+	for (++i; i < (long) rect->moveInstsX.size(); ++i) {
+		sum += rect->moveInstsX[i]->getArea();
+		if (sum >= halfCellArea) {
+			cellCenterX = rect->moveInstsX[i]->getCenterX();
 			break;
 		}
 	}
+	for (++i; i < (long) rect->moveInstsX.size(); ++i) {
+		sum += rect->moveInstsX[i]->getArea();
+		if (sum >= paddingArea2) {
+			denseRight = rect->moveInstsX[i]->getCenterX();
+			break;
+		}
+	}
+	sum = 0.0;
+	i = 0;
+	for (; i < (long) rect->moveInstsY.size(); ++i) {
+		sum += rect->moveInstsY[i]->getArea();
+		if (sum >= paddingArea1) {
+			denseBottom = rect->moveInstsY[i]->getCenterY();
+			break;
+		}
+	}
+	for (++i; i < (long) rect->moveInstsY.size(); ++i) {
+		sum += rect->moveInstsY[i]->getArea();
+		if (sum >= halfCellArea) {
+			cellCenterY = rect->moveInstsY[i]->getCenterY();
+			break;
+		}
+	}
+	for (++i; i < (long) rect->moveInstsY.size(); ++i) {
+		sum += rect->moveInstsY[i]->getArea();
+		if (sum >= paddingArea2) {
+			denseTop = rect->moveInstsY[i]->getCenterY();
+			break;
+		}
+	}
+	cout << denseLeft << ", " << cellCenterX << ", " << denseRight << endl;
+	cout << denseBottom << ", " << cellCenterY << ", " << denseTop << endl;
+	cout << rect->left << ", " << rect->right << ", " << rect->getWidth() << endl;
+	cout << rect->bottom << ", " << rect->top << ", " << rect->getHeight() << endl;
+	double enlargeX =  rect->getWidth() / (denseRight - denseLeft);
+	double enlargeY = rect->getHeight() / (denseTop - denseBottom);
+	if (enlargeX > 2) enlargeX /= 2;
+	if (enlargeY > 2) enlargeY /= 2;
+	if (enlargeX > 5) enlargeX = 5;
+	if (enlargeY > 5) enlargeY = 5;
+	
+	cout << "enlargeX: " << enlargeX << ", enlargeY: " << enlargeY << endl;
+	double deltaX = rectCenterX - cellCenterX;
+	double deltaY = rectCenterY - cellCenterY;
 	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
 		double x = rect->moveInstsX[i]->getCenterX();
 		double y = rect->moveInstsX[i]->getCenterY();
 		double w = rect->moveInstsX[i]->getWidth();
 		double h = rect->moveInstsX[i]->getHeight();
-		double deltaX = x - cellCenterX;
-		double deltaY = y - cellCenterY;
-		double delta = 0.1;
-		double dist = distToBoundingBox(rectCenterX, rectCenterY, deltaX, deltaY, rect);
-		rect->moveInstsX[i]->setCoordX(rectCenterX + deltaX + delta * dist - w/2);
-		rect->moveInstsX[i]->setCoordY(rectCenterY + deltaY + delta * dist - h/2);
+		double x_new = enlargeX * (x - cellCenterX) + cellCenterY + 0.1 * deltaX;
+		if (x_new > rect->right) x_new = rect->right;
+		if (x_new < rect->left) x_new = rect->left;
+		double y_new = enlargeY * (y - cellCenterY) + cellCenterY + 0.1 * deltaY;
+		if (y_new > rect->top) y_new = rect->top;
+		if (y_new < rect->bottom) y_new = rect->bottom;
+
+		rect->moveInstsX[i]->setCoordX(x_new - w/2);
+		rect->moveInstsX[i]->setCoordY(y_new - h/2);
 	}
 }
 
