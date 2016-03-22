@@ -176,6 +176,7 @@ public:
 	void divide(const RLRegion* r, const bool vertical, vector<RLRegion*>& Q_next);
 	void moveCellsToBin(RLRegion* bin);
 	void cellDistribution(RLRegion* rect);
+	void linearDiffusion(RLRegion* rect);
 	void diffusion(RLRegion* rect, int level);
 	void getStripsUsage(vector<long>& borders, vector<Inst*>& obstacles,
 			vector<double>& whiteSpace, long boundary1, long boundary2,

@@ -2005,8 +2005,10 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin) {
 	long binCenterX = (bin->left + bin->right) / 2;
 	long binCenterY = (bin->top + bin->bottom) / 2;
 	for (long i = 0; i < (long)bin->moveInstsX.size(); ++i) {
-		bin->moveInstsX[i]->setCoordX(binCenterX);
-		bin->moveInstsX[i]->setCoordY(binCenterY);
+		long width = bin->moveInstsX[i]->getWidth();
+		long height = bin->moveInstsX[i]->getHeight();
+		bin->moveInstsX[i]->setOrigin(
+			binCenterX - width / 2, binCenterY - height / 2);
 	}
 }
 
@@ -2045,6 +2047,33 @@ void SimPlPlace::cellDistribution(RLRegion* rect) {
 		for (long i = 0; (long) i < Q_next.size(); ++i) {
 			Q.push(Q_next[i]);
 		}
+	}
+}
+
+void SimPlPlace::linearDiffusion(RLRegion* rect) {
+	// TODO: change to whitespace center
+	long rectCenterX = (rect->left + rect->right) / 2;
+	long rectCenterY = (rect->top + rect->bottom) / 2;
+
+	double halfCellArea = rect->getCellArea() / 2;
+	double cellCenterX, cellCenterY;
+	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
+		halfCellArea -= rect->moveInstsX[i]->getArea();
+		cellCenterX = rect->moveInstsX[i]->getCenterX();
+		if (halfCellArea <= 0) {
+			break;
+		}
+	}
+	halfCellArea = rect->getCellArea() / 2;
+	for (long i = 0; i < (long) rect->moveInstsY.size(); ++i) {
+		halfCellArea -= rect->moveInstsY[i]->getArea();
+		cellCenterY = rect->moveInstsY[i]->getCenterY();
+		if (halfCellArea <= 0) {
+			break;
+		}
+	}
+	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
+//		rect->moveInstsX[i]->setCoordX()
 	}
 }
 
