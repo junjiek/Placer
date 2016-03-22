@@ -1108,7 +1108,10 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //			diffusion(r, l);
 //		}
 		//subCluster.clear();
-		cellDistribution(clusters[i]);
+
+		// POLAR
+		// cellDistribution(clusters[i]);
+		linearDiffusion(clusters[i], step);
 	}
 	//cout << "Finish Rough Legalization " << endl;
 }
@@ -2050,7 +2053,80 @@ void SimPlPlace::cellDistribution(RLRegion* rect) {
 	}
 }
 
-void SimPlPlace::linearDiffusion(RLRegion* rect) {
+double distToBoundingBox(
+		const double rectCenterX, const double rectCenterY,
+		const double deltaX, const double deltaY, RLRegion* boundingBox) {
+	double rightX = boundingBox->right - rectCenterX;
+	double leftX = boundingBox->left - rectCenterX;
+	double topY = boundingBox->top - rectCenterY;
+	double bottomY = boundingBox->bottom - rectCenterY;
+
+	if (abs(deltaX) <= 10e-6) {
+		if (deltaY > 0) {
+			return topY - deltaY;
+		} else {
+			return deltaY - bottomY;
+		}
+	}
+	if (abs(deltaY) <= 10e-6) {
+		if (deltaX > 0) {
+			return rightX - deltaX;
+		} else {
+			return deltaX - leftX;
+		}
+	}
+	double slope = deltaY / deltaX;
+	double intersectX, intersectY;
+	if (deltaX > 0 && deltaY > 0) {
+		// Intersects with right or top bound.
+		double rightY = slope * rightX;
+		if (rightY <= topY && rightY >= bottomY) {
+			intersectX = rightX;
+			intersectY = rightY;
+		} else {
+			double topX = topY / slope;
+			intersectX = topX;
+			intersectY = topY;
+		}
+	} else if (deltaX < 0 && deltaY < 0) {
+		// Intersects with left or bottom bound.
+		double leftY = slope * leftX;
+		if (leftY <= topY && leftY >= bottomY) {
+			intersectX = leftX;
+			intersectY = leftY;
+		} else {
+			double bottomX = bottomY / slope;
+			intersectX = bottomX;
+			intersectY = bottomY;
+		}
+	} else if (deltaX > 0 && deltaY < 0) {
+		// Intersects with right or bottom bound.
+		double rightY = slope * rightX;
+		if (rightY <= topY && rightY >= bottomY) {
+			intersectX = rightX;
+			intersectY = rightY;
+		} else {
+			double bottomX = bottomY / slope;
+			intersectX = bottomX;
+			intersectY = bottomY;
+		}
+	} else {
+		// Intersects with left or top bound.
+		double leftY = slope * leftX;
+		if (leftY <= topY && leftY >= bottomY) {
+			intersectX = leftX;
+			intersectY = leftY;
+		} else {
+			double topX = topY / slope;
+			intersectX = topX;
+			intersectY = topY;
+		}
+	}
+	return sqrt((intersectX - deltaX) * (intersectX - deltaX)
+		   		+ (intersectY - deltaY) * (intersectY - deltaY));
+}
+
+void SimPlPlace::linearDiffusion(RLRegion* rect, long step) {
 	// TODO: change to whitespace center
 	long rectCenterX = (rect->left + rect->right) / 2;
 	long rectCenterY = (rect->top + rect->bottom) / 2;
@@ -2073,7 +2149,16 @@ void SimPlPlace::linearDiffusion(RLRegion* rect) {
 		}
 	}
 	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
-//		rect->moveInstsX[i]->setCoordX()
+		double x = rect->moveInstsX[i]->getCenterX();
+		double y = rect->moveInstsX[i]->getCenterY();
+		double w = rect->moveInstsX[i]->getWidth();
+		double h = rect->moveInstsX[i]->getHeight();
+		double deltaX = x - cellCenterX;
+		double deltaY = y - cellCenterY;
+		double delta = 0.1;
+		double dist = distToBoundingBox(rectCenterX, rectCenterY, deltaX, deltaY, rect);
+		rect->moveInstsX[i]->setCoordX(rectCenterX + deltaX + delta * dist - w/2);
+		rect->moveInstsX[i]->setCoordY(rectCenterY + deltaY + delta * dist - h/2);
 	}
 }
 
