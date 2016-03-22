@@ -4,4 +4,6 @@ obj/
 .cproject
 .project
 *.eps
-
+placer-SIMPL
+placer-POLAR
+*.sol.pl
