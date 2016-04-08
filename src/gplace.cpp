@@ -1005,9 +1005,9 @@ void SimPlPlace::lookAheadLegalize(long h, long v) {
 #endif
 
 string outputFilename(const char* prefix, const long step) {
-	stringstream ss;
-	ss << step;
-	return string(prefix) + "_" + ss.str() + ".gnu";
+	char* filename[100];
+	sprintf(filename, "%s_%03d.gnu", prefix, step);
+	return string(filename)
 }
 
 #if 1
@@ -3577,6 +3577,7 @@ void SimPlPlace::guiDensityMap(const char* fname) {
 	}
 	gpFile.close();
 }
+
 
 void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , vector<Triple>& overf) {
 	ofstream gpFile(fname);
