@@ -1005,9 +1005,9 @@ void SimPlPlace::lookAheadLegalize(long h, long v) {
 #endif
 
 string outputFilename(const char* prefix, const long step) {
-	char* filename[100];
+	char filename[100];
 	sprintf(filename, "%s_%03d.gnu", prefix, step);
-	return string(filename)
+	return string(filename);
 }
 
 #if 1
