@@ -7,3 +7,4 @@ obj/
 placer-SIMPL
 placer-POLAR
 *.sol.pl
+*gnu*

@@ -125,6 +125,7 @@ public:
 	void gPlace();
 	void guiFile(const char* fname);
 	void guiRect(const char* fname,  vector<Triple>& overf, long x1, long x2, long y1, long y2);
+	void guiDensityMap(const char* fname);
 	void guiClustersGroup(const char* fname, vector<RLRegion*>& clus , vector<Triple>& overf);//add by Wuwy
 	void guiRectGroup(const char* fname, vector<Rect>& rects);
 	void guiRect1(const char* fname, long x1,long x2, long y1, long y2);

@@ -355,7 +355,7 @@ void SimPlPlace::gPlace() {
 
 
 
-		//globalRefine();
+		// globalRefine();
 
 
 		/*if (i % 2 == 0 && i > 5){
@@ -1004,6 +1004,12 @@ void SimPlPlace::lookAheadLegalize(long h, long v) {
 }
 #endif
 
+string outputFilename(const char* prefix, const long step) {
+	stringstream ss;
+	ss << step;
+	return string(prefix) + "_" + ss.str() + ".gnu";
+}
+
 #if 1
 void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 	// find LAL aregion
@@ -1037,16 +1043,16 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	numC << clusters.size() << endl;
 
 	//DEBUG
-	bool debug = step == 20;
+	bool debug = 1;
 	if (debug) {
 		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup("Cluster_group1.gnu", clusters , overfilledBins);
+		guiClustersGroup(outputFilename("clusters1", step).c_str(), clusters, overfilledBins);
+		// guiDensityMap(outputFilename("bins1", step).c_str());
 		cout << "OK! " << endl;
-		// cin >> TEST;
 	}
 
 	//DEBUG for narrow boundingBox
@@ -1089,30 +1095,33 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 	//spread cells in subregions
 	int level = 10;
 	for (long i = 0; i < (long) clusters.size(); ++i) {
+		if (0) {
+			// linearDiffusion(clusters[i], step);
+			// POLAR
+			cellDistribution(clusters[i]);
+			continue;
+		}
 		//checkOrder(clusters[i]->moveInstsX, true);
 		//checkOrder(clusters[i]->moveInstsY, false);
-//		RectLevel rl;
-//		rl.level = level;
-//		rl.region = clusters[i];
-//		while (!subRegions.empty()) {
-//			subRegions.pop();
-//		}
-//		subRegions.push(rl);
-//
-//		while (!subRegions.empty()) {
-//			// diffusion cells in the cluster
-//			RectLevel rlt = subRegions.front();
-//			subRegions.pop();
-//			RLRegion* r = rlt.region;
-//			int l = rlt.level;
-//
-//			diffusion(r, l);
-//		}
+		RectLevel rl;
+		rl.level = level;
+		rl.region = clusters[i];
+		while (!subRegions.empty()) {
+			subRegions.pop();
+		}
+		subRegions.push(rl);
+
+		while (!subRegions.empty()) {
+			// diffusion cells in the cluster
+			RectLevel rlt = subRegions.front();
+			subRegions.pop();
+			RLRegion* r = rlt.region;
+			int l = rlt.level;
+
+			diffusion(r, l);
+		}
 		//subCluster.clear();
 
-		// POLAR
-		// cellDistribution(clusters[i]);
-		linearDiffusion(clusters[i], step);
 	}
 	//cout << "Finish Rough Legalization " << endl;
 	if (debug) {
@@ -1121,7 +1130,8 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup("Cluster_group2.gnu", clusters , overfilledBins);
+		guiClustersGroup(outputFilename("clusters2", step).c_str(), clusters , overfilledBins);
+		// guiDensityMap(outputFilename("bins2", step).c_str());
 		cout << "OK! " << endl;
 		// cin >> TEST;
 	}
@@ -1161,7 +1171,7 @@ RLRegion* SimPlPlace::getCluster(Triple& overfilledBin, long h, long v, long ste
 	//TODO unsure
 	if (0) {
 		//if (simplified && h == v){
-		//cout<<"simplified!!"<<endl;
+		// cout<<"simplified!!"<<endl;
 		for (long i = 0; i < gridNumX; ++i) {
 			for (long j = 0; j < gridNumY; ++j) {
 				areaCell += bins[i][j]->cellArea;
@@ -1176,6 +1186,10 @@ RLRegion* SimPlPlace::getCluster(Triple& overfilledBin, long h, long v, long ste
 		cluster->top = bins[gridNumX - 1][gridNumY - 1]->top;
 		cluster->cellArea = areaCell;
 		cluster->availableArea = areaAvailable;
+		cluster->gridLeft = 0;
+		cluster->gridRight = gridNumX - 1;
+		cluster->gridBottom = 0;
+		cluster->gridTop = gridNumY - 1;
 		return cluster;
 	}
 
@@ -2016,13 +2030,57 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin) {
 	assert(bin->gridTop == bin->gridBottom);
 	assert(bin->moveInstsX.size() == bin->moveInstsY.size());
 
+	// Put all the cells at bin center.
+	// long binCenterX = (bin->left + bin->right) / 2;
+	// long binCenterY = (bin->top + bin->bottom) / 2;
+	// for (long i = 0; i < (long)bin->moveInstsX.size(); ++i) {
+	// 	long w = bin->moveInstsX[i]->getWidth();
+	// 	long h = bin->moveInstsX[i]->getHeight();
+	// 	bin->moveInstsX[i]->setOrigin(
+	// 		binCenterX - w / 2, binCenterY - h / 2);
+	// }
+
+	long cellSize = (long) bin->moveInstsX.size();
+	if (cellSize == 0) {
+		return;
+	}
 	long binCenterX = (bin->left + bin->right) / 2;
 	long binCenterY = (bin->top + bin->bottom) / 2;
-	for (long i = 0; i < (long)bin->moveInstsX.size(); ++i) {
-		long width = bin->moveInstsX[i]->getWidth();
-		long height = bin->moveInstsX[i]->getHeight();
-		bin->moveInstsX[i]->setOrigin(
-			binCenterX - width / 2, binCenterY - height / 2);
+	if (cellSize == 1) {
+		long w = bin->moveInstsX[0]->getWidth();
+		long h = bin->moveInstsX[0]->getHeight();
+		bin->moveInstsX[0]->setOrigin(
+			binCenterX - w / 2, binCenterY - h / 2);
+		return;
+	}
+
+	double cellLeft = bin->moveInstsX[0]->getCenterX();
+	double cellRight = bin->moveInstsX[cellSize - 1]->getCenterX();
+	double cellBottom = bin->moveInstsY[0]->getCenterY();
+	double cellTop = bin->moveInstsY[cellSize - 1]->getCenterY();
+	double cellCenterX = (cellLeft + cellRight) / 2;
+	double cellCenterY = (cellBottom + cellTop) / 2;
+	double enlargeX, enlargeY;
+	if (cellRight - cellLeft <= 10e-6) {
+		enlargeX = 1.0;
+	} else {
+		enlargeX = bin->getWidth() / (cellRight - cellLeft);
+	}
+	if (cellTop - cellBottom <= 10e-6) {
+		enlargeY = 1.0;
+	} else {
+		enlargeY = bin->getHeight() / (cellTop - cellBottom);
+	}
+
+	for (long i = 0; i < cellSize; ++i) {
+		double x = bin->moveInstsX[i]->getCenterX();
+		double y = bin->moveInstsX[i]->getCenterY();
+		double w = bin->moveInstsX[i]->getWidth();
+		double h = bin->moveInstsX[i]->getHeight();
+		double x_new = enlargeX * (x - cellCenterX) + binCenterX;
+		double y_new = enlargeY * (y - cellCenterY) + binCenterY;
+		bin->moveInstsX[i]->setCoordX(x_new - w/2);
+		bin->moveInstsX[i]->setCoordY(y_new - h/2);
 	}
 }
 
@@ -2206,27 +2264,30 @@ void SimPlPlace::linearDiffusion(RLRegion* rect, long step) {
 	cout << denseBottom << ", " << cellCenterY << ", " << denseTop << endl;
 	cout << rect->left << ", " << rect->right << ", " << rect->getWidth() << endl;
 	cout << rect->bottom << ", " << rect->top << ", " << rect->getHeight() << endl;
-	double enlargeX =  rect->getWidth() / (denseRight - denseLeft);
-	double enlargeY = rect->getHeight() / (denseTop - denseBottom);
-	if (enlargeX > 2) enlargeX /= 2;
-	if (enlargeY > 2) enlargeY /= 2;
-	if (enlargeX > 5) enlargeX = 5;
-	if (enlargeY > 5) enlargeY = 5;
-	
+	// double enlargeX =  rect->getWidth() / (denseRight - denseLeft);
+	// double enlargeY = rect->getHeight() / (denseTop - denseBottom);
+	double enlargeX = 2;
+	double enlargeY = 2;
 	cout << "enlargeX: " << enlargeX << ", enlargeY: " << enlargeY << endl;
-	double deltaX = rectCenterX - cellCenterX;
-	double deltaY = rectCenterY - cellCenterY;
+	// double deltaX = rectCenterX - cellCenterX;
+	// double deltaY = rectCenterY - cellCenterY;
+	double deltaX = 0;
+	double deltaY = 0;
 	for (long i = 0; i < (long) rect->moveInstsX.size(); ++i) {
 		double x = rect->moveInstsX[i]->getCenterX();
 		double y = rect->moveInstsX[i]->getCenterY();
 		double w = rect->moveInstsX[i]->getWidth();
 		double h = rect->moveInstsX[i]->getHeight();
-		double x_new = enlargeX * (x - cellCenterX) + cellCenterY + 0.1 * deltaX;
-		if (x_new > rect->right) x_new = rect->right;
-		if (x_new < rect->left) x_new = rect->left;
-		double y_new = enlargeY * (y - cellCenterY) + cellCenterY + 0.1 * deltaY;
-		if (y_new > rect->top) y_new = rect->top;
-		if (y_new < rect->bottom) y_new = rect->bottom;
+		// double x_new = enlargeX * (x - cellCenterX) + cellCenterX + 0.1 * deltaX;
+		double x_new = enlargeX * (x - rectCenterX) + rectCenterX + 0.1 * deltaX;
+		// double x_new = enlargeX * (x - cellCenterX) + rectCenterX + 0.1 * deltaX;
+		// if (x_new > rect->right) x_new = rect->right;
+		// if (x_new < rect->left) x_new = rect->left;
+		// double y_new = enlargeY * (y - cellCenterY) + cellCenterY + 0.1 * deltaY;
+		double y_new = enlargeY * (y - rectCenterY) + rectCenterY + 0.1 * deltaY;
+		// double y_new = enlargeY * (y - cellCenterY) + rectCenterY + 0.1 * deltaY;
+		// if (y_new > rect->top) y_new = rect->top;
+		// if (y_new < rect->bottom) y_new = rect->bottom;
 
 		rect->moveInstsX[i]->setCoordX(x_new - w/2);
 		rect->moveInstsX[i]->setCoordY(y_new - h/2);
@@ -3172,7 +3233,7 @@ void SimPlPlace::globalRefine() {
 		id = targetCells[i]->getId();
 		if (lock[id] == false) {
 			v.push(targetCells[i]);
-			//cout<<"[GlobalRefine]: move cell "<<targetCells[i]->getName()<<endl;
+			// cout<<"[GlobalRefine]: move cell "<<targetCells[i]->getName()<<endl;
 		} else {
 			continue;
 		}
@@ -3506,6 +3567,17 @@ void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long
 	gpFile.close();
 }
 
+void SimPlPlace::guiDensityMap(const char* fname) {
+	ofstream gpFile(fname);
+	for (long i = gridNumX - 1; i >= 0; --i) {
+		for (long j = gridNumY - 1; j >= 0; --j) {
+				gpFile << bins[i][j]->getCellArea() << " ";
+		}
+		gpFile << endl;
+	}
+	gpFile.close();
+}
+
 void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , vector<Triple>& overf) {
 	ofstream gpFile(fname);
 	string cell = string(fname) + "_cell";
@@ -3519,10 +3591,18 @@ void SimPlPlace::guiClustersGroup(const char* fname, vector<RLRegion*>& clus , v
 	 << blockX + blockW << "]" << endl;
 	 gpFile << "set ytics [" << blockY << ":"
 	 << blockY + blockH << "]" << endl*/;
+	bool PNG = true;
+	if (PNG) {
+		gpFile << "set terminal png size 1024, 768" << endl;
+		string pngFile = string(fname) + ".png";
+		gpFile << "set output \"" << pngFile << "\"" << endl;
+	}
 	gpFile << "plot \"" << cell << "\" with steps, " << "\"" << obstacle
 			<< "\" with steps, " << "\"" << bin
 			<< "\" with steps, "<< "\"" << rect << "\" with steps" << endl;
-
+	if (PNG) {
+		gpFile << "set output" << endl;
+	}
 	const char* fname_cell = cell.c_str();
 	const char* fname_obstacle = obstacle.c_str();
 	const char* fname_rect = rect.c_str();
