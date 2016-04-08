@@ -1004,9 +1004,9 @@ void SimPlPlace::lookAheadLegalize(long h, long v) {
 }
 #endif
 
-string outputFilename(const char* prefix, const long step) {
+string outputFilename(const char* suffix, const long step) {
 	char filename[100];
-	sprintf(filename, "%s_%03d.gnu", prefix, step);
+	sprintf(filename, "%03d_%s.gnu", step, suffix);
 	return string(filename);
 }
 
@@ -1050,7 +1050,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup(outputFilename("./gnu/clusters1", step).c_str(), clusters, overfilledBins);
+		guiClustersGroup(outputFilename(step, "1").c_str(), clusters, overfilledBins);
 		// guiDensityMap(outputFilename("bins1", step).c_str());
 		cout << "OK! " << endl;
 	}
@@ -1130,7 +1130,8 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup(outputFilename("./gnu/clusters2", step).c_str(), clusters , overfilledBins);
+		vector<RLRegion*> empty;
+		guiClustersGroup(outputFilename(step, "2").c_str(), empty, overfilledBins);
 		// guiDensityMap(outputFilename("bins2", step).c_str());
 		cout << "OK! " << endl;
 		// cin >> TEST;
