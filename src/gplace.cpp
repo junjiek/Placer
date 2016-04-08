@@ -1050,7 +1050,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup(outputFilename("clusters1", step).c_str(), clusters, overfilledBins);
+		guiClustersGroup(outputFilename("./gnu/clusters1", step).c_str(), clusters, overfilledBins);
 		// guiDensityMap(outputFilename("bins1", step).c_str());
 		cout << "OK! " << endl;
 	}
@@ -1130,7 +1130,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// cout << i << ' ' << overfilledBins[i].element << endl;
 		// 		gridSize*overfilledBins[i].row << ' ' <<
 		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup(outputFilename("clusters2", step).c_str(), clusters , overfilledBins);
+		guiClustersGroup(outputFilename("./gnu/clusters2", step).c_str(), clusters , overfilledBins);
 		// guiDensityMap(outputFilename("bins2", step).c_str());
 		cout << "OK! " << endl;
 		// cin >> TEST;
