@@ -127,6 +127,7 @@ public:
 	void guiRect(const char* fname,  vector<Triple>& overf, long x1, long x2, long y1, long y2);
 	void guiDensityMap(const char* fname);
 	void guiClustersGroup(const char* fname, vector<RLRegion*>& clus , vector<Triple>& overf);//add by Wuwy
+	void guiClustersGroupMatlab(const char* fname, const char* densityfname, vector<RLRegion*>& clus , vector<Triple>& overf);
 	void guiRectGroup(const char* fname, vector<Rect>& rects);
 	void guiRect1(const char* fname, long x1,long x2, long y1, long y2);
 	void roughLegalization(long h, long v, long step);
@@ -175,8 +176,8 @@ public:
 
 	void lookAheadLegalize(long h, long v, long step);
 	void divide(const RLRegion* r, const bool vertical, vector<RLRegion*>& Q_next);
-	void moveCellsToBin(RLRegion* bin);
-	void cellDistribution(RLRegion* rect);
+	void moveCellsToBin(RLRegion* bin, long step);
+	void cellDistribution(RLRegion* rect, long step);
 	void linearDiffusion(RLRegion* rect, long step);
 	void diffusion(RLRegion* rect, int level);
 	void getStripsUsage(vector<long>& borders, vector<Inst*>& obstacles,

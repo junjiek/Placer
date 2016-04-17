@@ -178,6 +178,9 @@ void SimPlPlace::gPlace() {
 
 	ofstream up("Upper-Bound-Place_HPWL");
 	ofstream low("Lower-Bound-Place_HPWL");
+	double targetT = 1.0;
+	double overfiT = 1.0;
+	setTol(targetT, overfiT);
 	for (long i = 1; i <= MAXITER; ++i) {
 
 //		cout << "[INFO] : step = " << i << ", Input-Bound-Place-Before HPWL = "
@@ -247,11 +250,17 @@ void SimPlPlace::gPlace() {
 
 
 		//TODO
-		double targetT = 1.0;
-		double overfiT = 1.0;
+		// double targetT = 10.0;
+		// double overfiT = 10.0;
 		//double targetT = getDensFactor();
 		//double overfiT = getDensFactor();
-		setTol(targetT, overfiT);
+		// if (targetTol > 1) {
+		// 	setTol(targetTol * 0.99, overfillTol * 0.99);
+		// } else {
+		// 	setTol(1.0, 1.0);
+		// }
+		// cout << "[DEBUG] targetT = " << targetTol << ", overfiT = " << overfillTol
+		// 	 << ", denseFactor = " << getDensFactor() << endl;
 
 		//save old positions of cells
 		saveOldPos();
@@ -526,6 +535,17 @@ void SimPlPlace::flattenRL() {
 	}
 }
 
+string outputFilename(const long step, const char* suffix, const char* filetype) {
+	char filename[100];
+	if (filetype == NULL || strlen(filetype) == 0) {
+		sprintf(filename, "iter%03d%s", step, suffix);
+	} else {
+
+		sprintf(filename, "iter%03d%s.%s", step, suffix, filetype);
+	}
+	return string(filename);
+}
+
 void SimPlPlace::roughLegalization(long h, long v , long step) {
 	long TEST = 0;
 	ofstream fout;
@@ -552,6 +572,12 @@ void SimPlPlace::roughLegalization(long h, long v , long step) {
 	getBinsUsage(step);
 
 
+	// if (step <= 10) {
+	// 	string densityfname = outputFilename(step, "_ub_density", "txt");
+	// 	guiDensityMap(densityfname.c_str());
+	// 	cout << "OK! " << endl;
+	// 	// cin >> TEST;
+	// }
 
 	return;
 }
@@ -1004,12 +1030,6 @@ void SimPlPlace::lookAheadLegalize(long h, long v) {
 }
 #endif
 
-string outputFilename(const long step, const char* suffix) {
-	char filename[100];
-	sprintf(filename, "%03d_%s.gnu", step, suffix);
-	return string(filename);
-}
-
 #if 1
 void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 	// find LAL aregion
@@ -1043,15 +1063,20 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	numC << clusters.size() << endl;
 
 	//DEBUG
-	bool debug = 1;
+	vector<RLRegion*> clusters_copy;
+	bool debug = step <= 100;
 	if (debug) {
-		// cout << overfilledBins.size() << endl;
+		// Copy the clustering results for output.
+		for (int i = 0; i < clusters.size(); i++) {
+			RLRegion* region = new RLRegion(clusters[i]->left,
+				clusters[i]->right, clusters[i]->bottom, clusters[i]->top);
+			clusters_copy.push_back(region);
+		}
 		cout << "lookAheadLegalize: step " << step << endl;
-		// cout << i << ' ' << overfilledBins[i].element << endl;
-		// 		gridSize*overfilledBins[i].row << ' ' <<
-		// 		gridSize*overfilledBins[i].column << endl;
-		guiClustersGroup(outputFilename(step, "1").c_str(), clusters, overfilledBins);
-		// guiDensityMap(outputFilename(step, "density1").c_str());
+		guiClustersGroup(outputFilename(step, "_lb", "gnu").c_str(), clusters, overfilledBins);
+		// string densityfname = outputFilename(step, "_lb_density", "txt");
+		// guiDensityMap(densityfname.c_str());
+		// guiClustersGroupMatlab(outputFilename(step, "lb", NULL).c_str(), densityfname.c_str(), clusters, overfilledBins);
 		cout << "OK! " << endl;
 	}
 
@@ -1098,7 +1123,7 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		if (0) {
 			// linearDiffusion(clusters[i], step);
 			// POLAR
-			cellDistribution(clusters[i]);
+			cellDistribution(clusters[i], step);
 			continue;
 		}
 		//checkOrder(clusters[i]->moveInstsX, true);
@@ -1125,16 +1150,11 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 	}
 	//cout << "Finish Rough Legalization " << endl;
 	if (debug) {
-		// cout << overfilledBins.size() << endl;
 		cout << "lookAheadLegalize: step " << step << endl;
-		// cout << i << ' ' << overfilledBins[i].element << endl;
-		// 		gridSize*overfilledBins[i].row << ' ' <<
-		// 		gridSize*overfilledBins[i].column << endl;
-		vector<RLRegion*> empty;
-		guiClustersGroup(outputFilename(step, "2").c_str(), empty, overfilledBins);
-		// guiDensityMap(outputFilename(step, "density2").c_str());
-		cout << "OK! " << endl;
-		// cin >> TEST;
+		// string densityfname = outputFilename(step, "_ub_density", "txt");
+		// guiClustersGroupMatlab(outputFilename(step, "ub", NULL).c_str(), densityfname.c_str(), clusters_copy, overfilledBins);
+		guiClustersGroup(outputFilename(step, "_ub", "gnu").c_str(), clusters_copy, overfilledBins);
+		// guiDensityMap(outputFilename(step, "_ub_density", "txt").c_str());
 	}
 }
 #endif
@@ -2026,7 +2046,7 @@ void SimPlPlace::divide(const RLRegion* F, const bool vertical, vector<RLRegion*
 
 }
 
-void SimPlPlace::moveCellsToBin(RLRegion* bin) {
+void SimPlPlace::moveCellsToBin(RLRegion* bin, long step) {
 	assert(bin->gridRight == bin->gridLeft);
 	assert(bin->gridTop == bin->gridBottom);
 	assert(bin->moveInstsX.size() == bin->moveInstsY.size());
@@ -2061,31 +2081,41 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin) {
 	double cellTop = bin->moveInstsY[cellSize - 1]->getCenterY();
 	double cellCenterX = (cellLeft + cellRight) / 2;
 	double cellCenterY = (cellBottom + cellTop) / 2;
-	double enlargeX, enlargeY;
-	if (cellRight - cellLeft <= 10e-6) {
-		enlargeX = 1.0;
-	} else {
-		enlargeX = bin->getWidth() / (cellRight - cellLeft);
-	}
-	if (cellTop - cellBottom <= 10e-6) {
-		enlargeY = 1.0;
-	} else {
-		enlargeY = bin->getHeight() / (cellTop - cellBottom);
-	}
+	// double enlargeX, enlargeY;
+	// if (cellRight - cellLeft <= 10e-6) {
+	// 	enlargeX = 1.0;
+	// } else {
+	// 	enlargeX = bin->getWidth() / (cellRight - cellLeft);
+	// }
+	// if (cellTop - cellBottom <= 10e-6) {
+	// 	enlargeY = 1.0;
+	// } else {
+	// 	enlargeY = bin->getHeight() / (cellTop - cellBottom);
+	// }
 
+	double theta = 0.5;
+	// if (step <= 30) {
+	// 	theta = 0.5;
+	// } else if (step <= 60) {
+	// 	theta = 0.8;
+	// }
+	double deltaX = (binCenterX - cellCenterX) * theta;
+	double deltaY = (binCenterY - cellCenterY) * theta;
 	for (long i = 0; i < cellSize; ++i) {
 		double x = bin->moveInstsX[i]->getCenterX();
 		double y = bin->moveInstsX[i]->getCenterY();
 		double w = bin->moveInstsX[i]->getWidth();
 		double h = bin->moveInstsX[i]->getHeight();
-		double x_new = enlargeX * (x - cellCenterX) + binCenterX;
-		double y_new = enlargeY * (y - cellCenterY) + binCenterY;
+		// double x_new = enlargeX * (x - cellCenterX) + binCenterX;
+		// double y_new = enlargeY * (y - cellCenterY) + binCenterY;
+		double x_new = x + deltaX;
+		double y_new = y + deltaY;
 		bin->moveInstsX[i]->setCoordX(x_new - w/2);
 		bin->moveInstsX[i]->setCoordY(y_new - h/2);
 	}
 }
 
-void SimPlPlace::cellDistribution(RLRegion* rect) {
+void SimPlPlace::cellDistribution(RLRegion* rect, long step) {
 	assert(rect->availableArea <= rect->getArea());
 	assert(rect->right - 1> rect->left);
 	assert(rect->top - 1 > rect->bottom);
@@ -2105,7 +2135,7 @@ void SimPlPlace::cellDistribution(RLRegion* rect) {
 			long h = F->gridTop - F->gridBottom + 1;
 			if (w == 1 && h == 1) {
 				// F is a bin
-				moveCellsToBin(F);
+				moveCellsToBin(F, step);
 				delete F;
 			} else if ((vertical && w == 1)|| (!vertical && h == 1)) {
 				// F is a 1xn (nx1) gird && the cut is vertical (horizontal)
@@ -3570,13 +3600,80 @@ void SimPlPlace::guiRect(const char* fname, vector<Triple>& overf, long x1, long
 
 void SimPlPlace::guiDensityMap(const char* fname) {
 	ofstream gpFile(fname);
-	for (long i = gridNumX - 1; i >= 0; --i) {
-		for (long j = gridNumY - 1; j >= 0; --j) {
-				gpFile << bins[i][j]->getCellArea() << " ";
+	for (long i = 0; i < gridNumX; ++i) {
+		for (long j = 0; j < gridNumY; ++j) {
+			double density = bins[i][j]->getDensity();
+			if (density > overfillTol / 4 &&
+				bins[i][j]->availableArea / bins[i][j]->getArea() > 0.2) {
+				gpFile << bins[i][j]->left + bins[i][j]->getWidth() / 2 << " "
+					   << bins[i][j]->bottom + bins[i][j]->getHeight() / 2 << " "
+					   << density << endl;				
+			}
+
 		}
-		gpFile << endl;
 	}
 	gpFile.close();
+}
+
+void SimPlPlace::guiClustersGroupMatlab(
+	const char* fname, const char* densityfname, vector<RLRegion*>& clus, vector<Triple>& overf) {
+	string mFilename = string(fname) + ".m";
+	ofstream mFile(mFilename.c_str());
+	string cell = string(fname) + "_cell";
+	ofstream cFile(cell.c_str());
+	vector<Inst*> &insts = plcTopBlock->getInsts();
+	mFile << "A = load(\'" << cell << "\');" << endl;
+	// mFile << "scatplot(A(:, 1), A(:, 2), 'squares', [], [], [], 1, 4);" << endl;
+	mFile << "density = load(\'" << densityfname << "\');" << endl;
+	mFile << "scatter(density(:,1), density(:,2), 5, density(:,3), 'filled');" << endl;
+	mFile << "colorbar;\nhold on;" << endl;
+	mFile << "axis([" << blockX << "," << blockX + blockW << "," << blockY << "," << blockY + blockH << "]);" << endl;
+	// mFile << endl << endl;
+	long j;
+	for (j = 0; j < (long) insts.size(); j++) {
+		if (insts[j]->getStatus() == Moved) {
+			cFile << insts[j]->getCenterX() << " " << insts[j]->getCenterY() << endl;
+			// mFile  << "rectangle('Position', ["
+			// 	   << insts[j]->getCoordX() << ","
+			// 	   << insts[j]->getCoordY() << ","
+			// 	   << insts[j]->getWidth()  << ","
+			// 	   << insts[j]->getHeight()
+			// 	   << "], 'edgecolor', 'y');" << endl;
+		} else {
+			// Output fix obstacles.
+			mFile  << "rectangle('Position', ["
+				   << insts[j]->getCoordX() << ","
+				   << insts[j]->getCoordY() << ","
+				   << insts[j]->getWidth()  << ","
+				   << insts[j]->getHeight()
+				   << "], 'edgecolor', 'g');" << endl;
+		}
+
+	}
+
+	// Output overfilled bins.
+	for(long i = 0; i < (long)overf.size() ; ++i){
+		mFile  << "rectangle('Position', ["
+			   << bins[overf[i].row][overf[i].column]->left << ","
+			   << bins[overf[i].row][overf[i].column]->bottom << ","
+			   << bins[overf[i].row][overf[i].column]->getWidth() << ","
+			   << bins[overf[i].row][overf[i].column]->getHeight()
+			   << "], 'edgecolor', 'r');" << endl;
+	}
+	
+	// Output overfilled bins.
+	for (long i = 0; i < (long) clus.size(); ++i) {
+		mFile  << "rectangle('Position', ["
+			   << clus[i]->left << ","
+			   << clus[i]->bottom << ","
+			   << clus[i]->getWidth() << ","
+			   << clus[i]->getHeight()
+			   << "], 'edgecolor', 'm');" << endl;
+	}
+	mFile << "saveas(gcf, '" << fname << ".png', 'png');" << endl;
+	mFile << "exit;" << endl;
+	cFile.close();
+	mFile.close();
 }
 
 

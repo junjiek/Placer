@@ -208,20 +208,19 @@ int main(int argc, char**argv) {
 	//	bool rippleDP = true;
 
 //	 (4) legalization
-//	fdplDetailPlace legalization(&block);
-//	legalization.setVisible_LG(false);
-//	legalization.dplace();
-//	placement.congestionEstimate();
-//	placement.guiFile("endplace.gnu");
-
+	fdplDetailPlace legalization(&block);
+	legalization.setVisible_LG(false);
+	legalization.dplace();
+	// placement.congestionEstimate();
+	placement.guiFile("endplace.gnu");
 
 	// (5) detailed placement
-//	cout << endl << "************ detailed placement ***********" << endl;
-//	Ldplace dplace(&block);
-//	dplace.setVisible_DP(false);
-//	dplace.run();
-//	legalization.refineOrient();
-//	placement.guiFile("detailedplace.gnu");
+	cout << endl << "************ detailed placement ***********" << endl;
+	Ldplace dplace(&block);
+	dplace.setVisible_DP(false);
+	dplace.run();
+	legalization.refineOrient();
+	placement.guiFile("detailedplace.gnu");
 
 	// (6) save the placement result to file
 	if (format == LEFDEF) {

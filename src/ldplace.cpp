@@ -57,7 +57,7 @@ void Ldplace::initLdplace(vector<myRow *>& rows, vector<Inst*>& insts) {
 
 	initSubrow(insts, rows);
 
-	//cout<<"***initSubrow***"<<endl;
+	// cout<<"***initSubrow***"<<endl;
 
 	//for(long i = 0; i < numRow; i++)numFixed += ldpRows[i]->getNumSubRow();
 
@@ -65,7 +65,7 @@ void Ldplace::initLdplace(vector<myRow *>& rows, vector<Inst*>& insts) {
 	long size = 0;
 	initInstofSubrow();
 
-	//cout<<"***initInstOfSubrow***"<<endl;
+	// cout<<"***initInstOfSubrow***"<<endl;
 
 	//cout<<"total mov:  "<<movValInsts.size()<<endl;
 
@@ -104,9 +104,10 @@ inline void Ldplace::initSubrow(vector<Inst*>& insts, vector<myRow *>& rows) {
 	mySubRow* subRowTemp;
 	numFixed = 0;
 	try {
+		cout << "lalalal: " << numInst << ", " << insts.size() << endl;
 
 		for (unsigned long i = 0; i < numInst; i++) {
-
+			cout << i << endl;
 			if ((insts[i]->getStatus() == Moved) && (insts[i]->getHeight()
 					> rowHeight))
 				cout << "The movable MacroCell is:" << insts[i]->getName()
