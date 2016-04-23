@@ -113,6 +113,10 @@ public:
 	long gridBottom;
 	long gridTop;
 
+	// Used for dynamic programming: calculate the space utilization ratio quickly.
+	double O; // total area of cells in region (0, 0, i, j)
+	double A; // available area of region (0, 0, i, j)
+
 //functions
 	void clearData(){
 		cellArea = 0;

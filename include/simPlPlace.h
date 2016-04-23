@@ -136,6 +136,7 @@ public:
 	void buildGrids();
 	void getBinsUsage(long step);
 	void findOverfilledBins();
+	RLRegion* getExpansionRegion(Triple& overfilledBin, long step);
 	RLRegion* getCluster(Triple& overfilledBin, long h, long v, long step);
 	void getCellsInCluster(RLRegion* cluster);
 	void reOrder(); //add by ZhouQ
@@ -175,6 +176,7 @@ public:
 	myPoint getBary(vector<myPoint>& overfilledPoint);
 
 	void lookAheadLegalize(long h, long v, long step);
+	void updateBinsInCluster(RLRegion* cluster);
 	void divide(const RLRegion* r, const bool vertical, vector<RLRegion*>& Q_next);
 	void moveCellsToBin(RLRegion* bin, long step);
 	void cellDistribution(RLRegion* rect, long step);
@@ -315,6 +317,7 @@ private:
 
 private:
 	long numCluster;
+
 public:
 	void setClusternum(){
 		numCluster = 0;

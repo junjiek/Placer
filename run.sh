@@ -4,4 +4,4 @@ if [[ $# != 2 ]]; then
     exit 0
 fi
 # make
-./placer-$1 ~/Project/benchmark/ISPD05/$2/$2.aux $2.sol.pl
+./placer-$1 ~/Project/benchmark/ISPD05/$2/$2.aux $2-$1.sol.pl

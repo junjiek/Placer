@@ -52,12 +52,9 @@ void Ldplace::initLdplace(vector<myRow *>& rows, vector<Inst*>& insts) {
 
 	//cout<<"***initLdprows***"<<endl;
 
-	//for debug
-	cout<<rows.size()<<" "<<insts.size()<<endl;
-
 	initSubrow(insts, rows);
 
-	// cout<<"***initSubrow***"<<endl;
+	cout<<"***initSubrow***"<<endl;
 
 	//for(long i = 0; i < numRow; i++)numFixed += ldpRows[i]->getNumSubRow();
 
@@ -65,9 +62,9 @@ void Ldplace::initLdplace(vector<myRow *>& rows, vector<Inst*>& insts) {
 	long size = 0;
 	initInstofSubrow();
 
-	// cout<<"***initInstOfSubrow***"<<endl;
+	cout<<"***initInstOfSubrow***"<<endl;
 
-	//cout<<"total mov:  "<<movValInsts.size()<<endl;
+	cout<<"total mov:  "<<movValInsts.size()<<endl;
 
 	for (long i = 0; i < numRow; i++) {
 		for (long j = 0; j < ldpRows[i]->numSubRow; j++)
@@ -104,16 +101,13 @@ inline void Ldplace::initSubrow(vector<Inst*>& insts, vector<myRow *>& rows) {
 	mySubRow* subRowTemp;
 	numFixed = 0;
 	try {
-		cout << "lalalal: " << numInst << ", " << insts.size() << endl;
-
 		for (unsigned long i = 0; i < numInst; i++) {
-			cout << i << endl;
 			if ((insts[i]->getStatus() == Moved) && (insts[i]->getHeight()
 					> rowHeight))
 				cout << "The movable MacroCell is:" << insts[i]->getName()
 						<< "  @@@@@@" << endl;
-
 			if (insts[i]->isRect()) {
+
 				//=================hjy20130320================================
 				//if(insts[i]->getStatus()==Moved)
 				//	      movValInsts.push_back(insts[i]);//original code
@@ -123,8 +117,10 @@ inline void Ldplace::initSubrow(vector<Inst*>& insts, vector<myRow *>& rows) {
 
 				if ((insts[i]->getStatus() == Moved) && (insts[i]->getHeight()
 						<= rowHeight)) {
+
 					movValInsts.push_back(insts[i]);
 				}
+
 				if ((insts[i]->getHeight() > rowHeight)
 						|| (insts[i]->getStatus() == Fixed)) {
 					//=================================================================
@@ -137,11 +133,11 @@ inline void Ldplace::initSubrow(vector<Inst*>& insts, vector<myRow *>& rows) {
 					// left = bbox.left(), right = bbox.right();
 					left = bbox.left();
 					right = bbox.right();
+
 					//cout<< i <<":  "<< left <<" "<< right <<" "<<bbox.bottom()<<" "<< bbox.top()<< endl;
 					// get the rows index need to be splited
 					bottomIndex = getRowIndexOccupied(bbox.bottom(), true);
-					topIndex = getRowIndexOccupied(bbox.top(), false);
-
+					topIndex = min(getRowIndexOccupied(bbox.top(), false), numRow - 1);
 					//cout<< i <<":  "<< left <<" "<< right <<" "<<bbox.bottom()<<" "<< bbox.top()<< endl;
 					for (long k = bottomIndex; k <= topIndex; ++k) {
 						//test
@@ -225,13 +221,14 @@ void Ldplace::initInstofSubrow() {
 	//========================================
 
 	//	cout<<"The row Height is :"<<rowHeight<<"  #################"<<endl<<endl;
-
+	cout << movValInsts.size() << endl;
 	for (unsigned long in = 0; in < movValInsts.size(); ++in) {
-
 		bool done = false;
 		instNow = movValInsts[in];
 		rowIndex = (instNow->getCoordY() - rowAreaBottom) / rowHeight;// getRowIndex(instNow);
-
+		if (rowIndex > numRow) {
+			continue;
+		}
 		rowNow = ldpRows[rowIndex];
 		instLeft = instNow->getCoordX();
 		instRight = instLeft + instNow->getWidth();
@@ -280,7 +277,6 @@ void Ldplace::initInstofSubrow() {
 			//==================hjy121214test========================
 
 		}
-
 		if (!done) {
 			cout << "[Error]: Can't put the inst into InstofSubrow!" << endl;
 			cout << in << ": " << instLeft << " " << instRight << " "
