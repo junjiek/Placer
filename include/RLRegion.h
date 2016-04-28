@@ -26,6 +26,7 @@ public:
 		availableArea = 1.0 * (top - bottom) * (right - left);//the whitespace that be lasted
 
 		clustered = false;
+		covered = false;
 		moveInstsX.clear();
 		moveInstsY.clear();
 		fixInsts.clear();
@@ -116,6 +117,7 @@ public:
 	// Used for dynamic programming: calculate the space utilization ratio quickly.
 	double O; // total area of cells in region (0, 0, i, j)
 	double A; // available area of region (0, 0, i, j)
+	bool covered;
 
 //functions
 	void clearData(){
