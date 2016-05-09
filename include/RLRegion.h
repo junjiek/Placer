@@ -117,6 +117,8 @@ public:
 	// Used for dynamic programming: calculate the space utilization ratio quickly.
 	double O; // total area of cells in region (0, 0, i, j)
 	double A; // available area of region (0, 0, i, j)
+	double OI; // sum of cell_area*i in region (0, 0, i, j)
+	double OJ; // sum of cell_area*j in region (0, 0, i, j)
 	bool covered;
 
 //functions

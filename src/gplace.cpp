@@ -12,6 +12,10 @@
 #define POLAR
 #endif
 
+// #ifndef SIMPL
+// #define SIMPL
+// #endif
+
 using namespace std;
 
 bool myMax(double a, double b) {
@@ -127,7 +131,7 @@ void SimPlPlace::gPlace() {
 	const long MAXITER = 100;
 	//const long MAXITER = 1;
 	cout << "[INFO] : Begin gPlace HPWL = " << getHPWL(plcTopBlock) << endl;
-	//double gap10 = 0;
+	double gap10 = 0;
 	double ubHPWL = 0;
 	double lbHPWL = 0;
 	double minHPWL = 10e20;
@@ -422,14 +426,24 @@ void SimPlPlace::gPlace() {
 		//time_t start2 = clock();
 
 		// control the convergance critiria
-		/*if (i == 10){
-		 gap10 = ubHPWL - lbHPWL;
-		 }
-		 if (i > 10) {
-		 if ((ubHPWL - lbHPWL) / gap10 - 0.1 < 0) {
-		 break;
-		 }
-		 }*/
+#ifdef SIMPL
+		if (i == 10){
+			gap10 = ubHPWL - lbHPWL;
+		}
+		if (i > 10) {
+			if ((ubHPWL - lbHPWL) / gap10 - 0.1 < 0) {
+				cout << "[INFO] : (SIMPL) Converged at iter " << i << endl;
+				break;
+			}
+		}
+#endif
+
+#ifdef POLAR
+		if ((ubHPWL - lbHPWL) / lbHPWL < 0.08) {
+			cout << "[INFO] : (POLAR) Converged at iter " << i << endl;
+			break;
+		}
+#endif
 
 		if (i == MAXITER) {
 			break;
@@ -554,30 +568,42 @@ void SimPlPlace::roughLegalization(long h, long v , long step) {
 	long TEST = 0;
 	ofstream fout;
 	//fout.open("peakDensity.txt", ios::app);
-	// cout<<"now buildGrids..."<<endl;
+	cout<<"now buildGrids..."<<endl;
 	buildGrids();
+	cout<<"now getBinsUsage..."<<endl;
 
-	// cout<<"now getBinsUsage..."<<endl;
+// #ifdef POLAR
+	// ---------- POLAR ------------
 	getBinsUsage(step);
-
-#ifdef POLAR
 	lookAheadLegalizePOLAR(step);
-#else
-	//cout<<"now findOverfilledBins..."<<endl;
-	findOverfilledBins();
-	cout << "[DEBUG]: overfilledBin = " << overfilledBins.size() << endl;
-	//ofstream overf("overfilledBin", ios_base::out | ios_base::app);
-	//overf << overfilledBins.size() << endl;
-	//fout<<overfilledBins[0].element<<endl;
-	//fout.close();
-	long iter = 0;
-
-	lookAheadLegalize(h, v, step);
-	// ?? Maybe it could be removed.
+	double ubHPWL1 = getHPWL(plcTopBlock);
+	cout << "[POLAR] Upper-Bound-Place_HPWL = " << ubHPWL1 << endl;
+	// vector<myPoint> upperBoundPos1;
+	// saveUpperBoundPos(upperBoundPos1);
+	// restoreOldPos();
+// #else
+	// ---------- SIMPL ------------
 	// getBinsUsage(step);
-#endif
-
-
+	// findOverfilledBins();
+	// cout << "[DEBUG]: overfilledBin = " << overfilledBins.size() << endl;
+	// lookAheadLegalize(h, v, step);
+	// double ubHPWL2 = getHPWL(plcTopBlock);
+	// cout << "[SIMPL] Upper-Bound-Place_HPWL = " << ubHPWL2 << endl;
+// #endif
+	// ofstream fubChoice;
+	// if (step == 1) {
+	// 	// Clear the contents
+	// 	fubChoice.open("Upper-Bound-Choice");
+	// } else {
+	// 	fubChoice.open("Upper-Bound-Choice", ios::app);
+	// }
+	// if (ubHPWL1 < ubHPWL2) {
+	// 	restoreUpperBoundPos(upperBoundPos1);
+	// 	fubChoice << step << " " << "POLAR" << endl;
+	// } else {
+	// 	fubChoice << step << " " << "SIMPL" << endl;
+	// }
+	// fubChoice.close();
 	return;
 }
 
@@ -938,18 +964,23 @@ void SimPlPlace::getBinsUsage(long step) {
 #ifdef POLAR
 	bins[0][0]->O = bins[0][0]->cellArea;
 	bins[0][0]->A = bins[0][0]->availableArea;
+	bins[0][0]->OI = bins[0][0]->OJ = 0;
 	for (long j = 1; j < gridNumY; ++j) {
 		bins[0][j]->O = bins[0][j-1]->O + bins[0][j]->cellArea;
 		bins[0][j]->A = bins[0][j-1]->A + bins[0][j]->availableArea;
+		bins[0][j]->OI = bins[0][j]->OJ = 0;
 	}
 	for (long i = 1; i < gridNumX; ++i){
 		for(long j = 0; j < gridNumY; ++j){
 			if (j == 0) {
 				bins[i][0]->O = bins[i-1][0]->O + bins[i][0]->cellArea;
 				bins[i][0]->A = bins[i-1][0]->A + bins[i][0]->availableArea;
+				bins[i][0]->OI = bins[i][0]->OJ = 0;
 			} else {
 				bins[i][j]->O = bins[i-1][j]->O + bins[i][j-1]->O - bins[i-1][j-1]->O + bins[i][j]->cellArea;
 				bins[i][j]->A = bins[i-1][j]->A + bins[i][j-1]->A - bins[i-1][j-1]->A + bins[i][j]->availableArea;
+				bins[i][j]->OI = bins[i-1][j]->OI + bins[i][j-1]->OI - bins[i-1][j-1]->OI + bins[i][j]->cellArea * i;
+				bins[i][j]->OJ = bins[i-1][j]->OJ + bins[i][j-1]->OJ - bins[i-1][j-1]->OJ + bins[i][j]->cellArea * j;
 			}
 		}
 	}
@@ -1059,6 +1090,15 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 			//checkOrder(newCluster->moveInstsX, true);
 			//checkOrder(newCluster->moveInstsY, false);
 			clusters.push_back(newCluster);
+			// Debug
+			// double l = newCluster->left;
+			// double r = newCluster->right;
+			// double b = newCluster->bottom;
+			// double t = newCluster->top;
+			// double w = r - l;
+			// double h = t - b;
+			// double ar = (w > h) ? w / h : h / w;
+			// cout << "[INFO] : newCluster aspect ratio = " << ar << endl;
 		} else {
 			delete newCluster;
 		}
@@ -1070,16 +1110,16 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 
 	//DEBUG
 	// vector<RLRegion*> clusters_copy;
-	ofstream flbMaxDensity, fubMaxDensity, fmoveDist;
-	if (step == 1) {
-		// Clear the contents
-		flbMaxDensity.open("Lower-Bound-MaxDensity");
-		fubMaxDensity.open("Upper-Bound-MaxDensity");
-		fmoveDist.open("MoveDist");
-		flbMaxDensity.close();
-		fubMaxDensity.close();
-		fmoveDist.close();
-	}
+	// ofstream flbMaxDensity, fubMaxDensity, fmoveDist;
+	// if (step == 1) {
+	// 	// Clear the contents
+	// 	flbMaxDensity.open("Lower-Bound-MaxDensity");
+	// 	fubMaxDensity.open("Upper-Bound-MaxDensity");
+	// 	fmoveDist.open("MoveDist");
+	// 	flbMaxDensity.close();
+	// 	fubMaxDensity.close();
+	// 	fmoveDist.close();
+	// }
 	bool debug = false;
 	if (debug) {
 		cout << "lookAheadLegalize Lower-Bound-Place: step " << step << endl;
@@ -1137,24 +1177,25 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 //	while(1);
 
 	//spread cells in subregions
-	int level = 10;
+	maxDiffusionLevel = 10;
 	for (long i = 0; i < (long) clusters.size(); ++i) {
-		RectLevel rl;
-		rl.level = level;
-		rl.region = clusters[i];
-		while (!subRegions.empty()) {
-			subRegions.pop();
-		}
-		subRegions.push(rl);
-		while (!subRegions.empty()) {
-			// diffusion cells in the cluster
-			RectLevel rlt = subRegions.front();
-			subRegions.pop();
-			RLRegion* r = rlt.region;
-			int l = rlt.level;
+		cellDistribution(clusters[i], step);
+		// RectLevel rl;
+		// rl.level = maxDiffusionLevel;
+		// rl.region = clusters[i];
+		// while (!subRegions.empty()) {
+		// 	subRegions.pop();
+		// }
+		// subRegions.push(rl);
+		// while (!subRegions.empty()) {
+		// 	// diffusion cells in the cluster
+		// 	RectLevel rlt = subRegions.front();
+		// 	subRegions.pop();
+		// 	RLRegion* r = rlt.region;
+		// 	int l = rlt.level;
 
-			diffusion(r, l);
-		}
+		// 	diffusion(r, l);
+		// }
 	}
 	//cout << "Finish Rough Legalization " << endl;
 	if (debug) {
@@ -1164,28 +1205,28 @@ void SimPlPlace::lookAheadLegalize(long h, long v, long step) {
 		// fubMaxDensity.open("Upper-Bound-MaxDensity", ios::app);
 		// fubMaxDensity << step << " " << overfilledBins[0].element << endl;
 		// fubMaxDensity.close();
-		guiClustersGroup(outputFilename(step, "_ub", "gnu").c_str(), clusters, overfilledBins);
+		guiClustersGroup(outputFilename(step, "_ub_simpl", "gnu").c_str(), clusters, overfilledBins);
 		// string densityfname = outputFilename(step, "_ub_density", "txt");
 		// guiClustersGroupMatlab(outputFilename(step, "ub", NULL).c_str(), densityfname.c_str(), clusters, overfilledBins);
 		// guiDensityMap(outputFilename(step, "_ub_density", "txt").c_str());
 
 		// Compute total moving distance.
-		double totMoveDist = 0.0;
-		for (long i = 0; i < numMoveNodes; ++i) {
-			double oldX = oldPos[i].coordX();
-			double oldY = oldPos[i].coordY();
-			double newX = validNodes[i]->getCenterX();
-			double newY = validNodes[i]->getCenterY();
-			double offX = oldX - newX;
-			double offY = oldY - newY;
+		// double totMoveDist = 0.0;
+		// for (long i = 0; i < numMoveNodes; ++i) {
+		// 	double oldX = oldPos[i].coordX();
+		// 	double oldY = oldPos[i].coordY();
+		// 	double newX = validNodes[i]->getCenterX();
+		// 	double newY = validNodes[i]->getCenterY();
+		// 	double offX = oldX - newX;
+		// 	double offY = oldY - newY;
 
-			totMoveDist += sqrt(offX * offX + offY * offY); // For debug.
-		}
-		fmoveDist.open("MoveDist", ios::app);
-		fmoveDist << step << " " << totMoveDist << endl;
-		fmoveDist.close();
+		// 	totMoveDist += sqrt(offX * offX + offY * offY); // For debug.
+		// }
+		// fmoveDist.open("MoveDist", ios::app);
+		// fmoveDist << step << " " << totMoveDist << endl;
+		// fmoveDist.close();
 		cout << "OK!" << endl;
-		cin >> TEST;
+		// cin >> TEST;
 	}
 }
 
@@ -1212,17 +1253,34 @@ void SimPlPlace::lookAheadLegalizePOLAR(long step) {
 	cout << "[INFO]: hotSpotSize = " << hotSpots.size() << endl;
 	sort(hotSpots.begin(), hotSpots.end(), greaterHotSpotDensity);
 
-	bool debug = true;  // For debug
+	bool debug = false;  // For debug
 	vector<Triple> overf;  // For debug
 	vector<RLRegion*> clusters;  // For debug
+	// ofstream flbMaxDensity, fubMaxDensity, fmoveDist;
+	// if (step == 1) {
+	// 	// Clear the contents
+	// 	flbMaxDensity.open("Lower-Bound-MaxDensity");
+	// 	fubMaxDensity.open("Upper-Bound-MaxDensity");
+	// 	fmoveDist.open("MoveDist");
+	// 	flbMaxDensity.close();
+	// 	fubMaxDensity.close();
+	// 	fmoveDist.close();
+	// }
 	if (debug) {
 		cout << "lookAheadLegalize Lower-Bound-Place: step " << step << endl;
-		for (int i = 0; i < (int)hotSpots.size(); ++i) {
-			for (int j = 0; j < (int)hotSpots[i].size(); ++j) {
+		double lbMaxDen = 0.0;
+		for (long i = 0; i < (long)hotSpots.size(); ++i) {
+			for (long j = 0; j < (long)hotSpots[i].size(); ++j) {
+				if (hotSpots[i][j]->getDensity() > lbMaxDen) {
+					lbMaxDen = hotSpots[i][j]->getDensity();
+				}
 				Triple tri(hotSpots[i][j]->gridLeft, hotSpots[i][j]->gridBottom, 1);
 				overf.push_back(tri);
 			}
 		}
+		// flbMaxDensity.open("Lower-Bound-MaxDensity", ios::app);
+		// flbMaxDensity << step << " " << lbMaxDen << endl;
+		// flbMaxDensity.close();
 		cout << "[INFO] : overfilledBins number = " << overf.size() << endl;
 		guiClustersGroup(outputFilename(step, "_lb", "gnu").c_str(), clusters, overf);
 		cout << "OK! " << endl;
@@ -1237,13 +1295,48 @@ void SimPlPlace::lookAheadLegalizePOLAR(long step) {
 		}
 		RLRegion* newCluster = getExpansionRegion(hs);
 		if (newCluster != NULL) {
+			// DEBUG
 			// cout << "newCluster: " << newCluster->gridLeft << ", " << newCluster->gridRight
 			// 	 << ", " << newCluster->gridBottom << ", " << newCluster->gridTop << endl;
+			// double l = newCluster->left;
+			// double r = newCluster->right;
+			// double b = newCluster->bottom;
+			// double t = newCluster->top;
+			// double w = r - l;
+			// double h = t - b;
+			// double ar = (w > h) ? w / h : h / w;
+			// cout << "[INFO] : newCluster aspect ratio = " << ar << endl;
+
 			clusters.push_back(newCluster);
 			getCellsInCluster(newCluster);
 			// cout << "getCellsInCluster" << endl;
+
 			cellDistribution(newCluster, step);
 			// cout << "cellDistribution" << endl;
+
+			// ------------ SIMPL Diffusion -------------
+			// maxDiffusionLevel = 10;
+			// if (newCluster->top - newCluster->bottom > newCluster->right - newCluster->left) {
+			// 	// Begin with y-direction diffusion
+			// 	maxDiffusionLevel++;
+			// }
+			// RectLevel rl;
+			// rl.level = maxDiffusionLevel;
+			// rl.region = newCluster;
+			// while (!subRegions.empty()) {
+			// 	subRegions.pop();
+			// }
+			// subRegions.push(rl);
+			// while (!subRegions.empty()) {
+			// 	// diffusion cells in the cluster
+			// 	RectLevel rlt = subRegions.front();
+			// 	subRegions.pop();
+			// 	RLRegion* r = rlt.region;
+			// 	int l = rlt.level;
+			// 	diffusion(r, l);
+			// }
+			// -------------------------
+
 			updateBinsInCluster(newCluster);
 			// cout << "updateBinsInCluster" << endl;
 
@@ -1254,9 +1347,37 @@ void SimPlPlace::lookAheadLegalizePOLAR(long step) {
 		cout << "lookAheadLegalize Upper-Bound-Place: step " << step << endl;
 		cout << "[INFO] : cluster number = " << clusters.size() << endl;
 		guiClustersGroup(outputFilename(step, "_ub", "gnu").c_str(), clusters, overf);
-		// string densityfname = outputFilename(step, "_lb_density", "txt");
+		// string densityfname = outputFilename(step, "_ub_density", "txt");
 		// guiDensityMap(densityfname.c_str());
-		// guiClustersGroupMatlab(outputFilename(step, "lb", NULL).c_str(), densityfname.c_str(), clusters, overfilledBins);
+		// guiClustersGroupMatlab(outputFilename(step, "ub", NULL).c_str(), densityfname.c_str(), clusters, overfilledBins);
+
+		// double ubMaxDen = 0.0;
+		// for (long i = 0; i < gridNumX; ++i) {
+		// 	for (long j = 0; j < gridNumY; ++j) {
+		// 		if (bins[i][j]->getDensity() > ubMaxDen) {
+		// 			ubMaxDen = bins[i][j]->getDensity();
+		// 		}
+		// 	}
+		// }
+		// fubMaxDensity.open("Upper-Bound-MaxDensity", ios::app);
+		// fubMaxDensity << step << " " << ubMaxDen << endl;
+		// fubMaxDensity.close();
+
+		// Compute total moving distance.
+		// double totMoveDist = 0.0;
+		// for (long i = 0; i < numMoveNodes; ++i) {
+		// 	double oldX = oldPos[i].coordX();
+		// 	double oldY = oldPos[i].coordY();
+		// 	double newX = validNodes[i]->getCenterX();
+		// 	double newY = validNodes[i]->getCenterY();
+		// 	double offX = oldX - newX;
+		// 	double offY = oldY - newY;
+
+		// 	totMoveDist += sqrt(offX * offX + offY * offY); // For debug.
+		// }
+		// fmoveDist.open("MoveDist", ios::app);
+		// fmoveDist << step << " " << totMoveDist << endl;
+		// fmoveDist.close();
 		cout << "OK! " << endl;
 		// cin >> TEST;
 	}
@@ -1317,18 +1438,41 @@ void SimPlPlace::updateBinsInCluster(RLRegion* cluster) {
 	}
 
 	// cout << lx << ", " << ly << ", " << rx << ", " << ry << endl;
-	if (lx == 0 || ly == 0) {
-		bins[0][0]->O = bins[0][0]->cellArea;
-		for (long i = 1; i < gridNumX; ++i) {
-			bins[i][0]->O = bins[i-1][0]->O + bins[i][0]->cellArea;
-		}
-		for (long j = 1; j < gridNumY; ++j) {
-			bins[0][j]->O = bins[0][j-1]->O + bins[0][j]->cellArea;
-		}	
+	// if (lx == 0 || ly == 0) {
+	// 	bins[0][0]->O = bins[0][0]->cellArea;
+	// 	for (long i = 1; i < gridNumX; ++i) {
+	// 		bins[i][0]->O = bins[i-1][0]->O + bins[i][0]->cellArea;
+	// 	}
+	// 	for (long j = 1; j < gridNumY; ++j) {
+	// 		bins[0][j]->O = bins[0][j-1]->O + bins[0][j]->cellArea;
+	// 	}	
+	// }
+	// for (long i = max(lx, 1); i < gridNumX; ++i){
+	// 	for(long j = max(ly, 1); j < gridNumY; ++j){
+	// 		bins[i][j]->O = bins[i-1][j]->O + bins[i][j-1]->O - bins[i-1][j-1]->O + bins[i][j]->cellArea;
+	// 	}
+	// }
+
+	bins[0][0]->O = bins[0][0]->cellArea;
+	bins[0][0]->A = bins[0][0]->availableArea;
+	bins[0][0]->OI = bins[0][0]->OJ = 0;
+	for (long j = 1; j < gridNumY; ++j) {
+		bins[0][j]->O = bins[0][j-1]->O + bins[0][j]->cellArea;
+		bins[0][j]->A = bins[0][j-1]->A + bins[0][j]->availableArea;
+		bins[0][j]->OI = bins[0][j]->OJ = 0;
 	}
-	for (long i = max(lx, 1); i < gridNumX; ++i){
-		for(long j = max(ly, 1); j < gridNumY; ++j){
-			bins[i][j]->O = bins[i-1][j]->O + bins[i][j-1]->O - bins[i-1][j-1]->O + bins[i][j]->cellArea;
+	for (long i = 1; i < gridNumX; ++i){
+		for(long j = 0; j < gridNumY; ++j){
+			if (j == 0) {
+				bins[i][0]->O = bins[i-1][0]->O + bins[i][0]->cellArea;
+				bins[i][0]->A = bins[i-1][0]->A + bins[i][0]->availableArea;
+				bins[i][0]->OI = bins[i][0]->OJ = 0;
+			} else {
+				bins[i][j]->O = bins[i-1][j]->O + bins[i][j-1]->O - bins[i-1][j-1]->O + bins[i][j]->cellArea;
+				bins[i][j]->A = bins[i-1][j]->A + bins[i][j-1]->A - bins[i-1][j-1]->A + bins[i][j]->availableArea;
+				bins[i][j]->OI = bins[i-1][j]->OI + bins[i][j-1]->OI - bins[i-1][j-1]->OI + bins[i][j]->cellArea * i;
+				bins[i][j]->OJ = bins[i-1][j]->OJ + bins[i][j-1]->OJ - bins[i-1][j-1]->OJ + bins[i][j]->cellArea * j;
+			}
 		}
 	}
 
@@ -1415,6 +1559,66 @@ void SimPlPlace::findHotSpot(vector<vector<RLRegion*> >& hotSpots) {
 	// cout << "[DEBUG] : overf = " << overf << endl;
 }
 
+double SimPlPlace::getRectCellArea(long lx, long ly, long rx, long ry) {
+	if (lx > 0 && ly > 0) {
+		return bins[rx][ry]->O - bins[rx][ly - 1]->O - bins[lx - 1][ry]->O + bins[lx - 1][ly - 1]->O;
+	} else if (lx > 0) {
+		// ly == 0
+		return bins[rx][ry]->O - bins[lx - 1][ry]->O;
+	} else if (ly > 0) {
+		// lx == 0
+		return bins[rx][ry]->O - bins[rx][ly - 1]->O;
+	} else {
+		// lx == ly == 0;
+		return bins[rx][ry]->O;
+	}
+}
+
+double SimPlPlace::getRectAvailableArea(long lx, long ly, long rx, long ry) {
+	if (lx > 0 && ly > 0) {
+		return bins[rx][ry]->A - bins[rx][ly - 1]->A - bins[lx - 1][ry]->A + bins[lx - 1][ly - 1]->A;
+	} else if (lx > 0) {
+		// ly == 0
+		return bins[rx][ry]->A - bins[lx - 1][ry]->A;
+	} else if (ly > 0) {
+		// lx == 0
+		return bins[rx][ry]->A - bins[rx][ly - 1]->A;
+	} else {
+		// lx == ly == 0;
+		return bins[rx][ry]->A;
+	}
+}
+
+double SimPlPlace::getRectCellAreaI(long lx, long ly, long rx, long ry) {
+	if (lx > 0 && ly > 0) {
+		return bins[rx][ry]->OI - bins[rx][ly - 1]->OI - bins[lx - 1][ry]->OI + bins[lx - 1][ly - 1]->OI;
+	} else if (lx > 0) {
+		// ly == 0
+		return bins[rx][ry]->OI - bins[lx - 1][ry]->OI;
+	} else if (ly > 0) {
+		// lx == 0
+		return bins[rx][ry]->OI - bins[rx][ly - 1]->OI;
+	} else {
+		// lx == ly == 0;
+		return bins[rx][ry]->OI;
+	}
+}
+
+double SimPlPlace::getRectCellAreaJ(long lx, long ly, long rx, long ry) {
+	if (lx > 0 && ly > 0) {
+		return bins[rx][ry]->OJ - bins[rx][ly - 1]->OJ - bins[lx - 1][ry]->OJ + bins[lx - 1][ly - 1]->OJ;
+	} else if (lx > 0) {
+		// ly == 0
+		return bins[rx][ry]->OJ - bins[lx - 1][ry]->OJ;
+	} else if (ly > 0) {
+		// lx == 0
+		return bins[rx][ry]->OJ - bins[rx][ly - 1]->OJ;
+	} else {
+		// lx == ly == 0;
+		return bins[rx][ry]->OJ;
+	}
+}
+
 RLRegion* SimPlPlace::getExpansionRegion(vector<RLRegion*>& hotSpot) {
 	long TEST;
 	if (hotSpot.empty()) {
@@ -1471,30 +1675,21 @@ RLRegion* SimPlPlace::getExpansionRegion(vector<RLRegion*>& hotSpot) {
 				double t = bins[lx][ry]->top;
 				double w = r - l;
 				double h = t - b;
-				if (w / h >= kAspectRatio || h / w >= kAspectRatio) {
+				double aspectRatio = (w > h) ? w / h : h / w;
+				if (aspectRatio >= kAspectRatio) {
 					// Aspect ratio too large.
 					continue;
 				}
-				double totalCellArea, totalAvailable;
-				if (lx > 0 && ly > 0) {
-					totalCellArea  = bins[rx][ry]->O - bins[rx][ly - 1]->O - bins[lx - 1][ry]->O + bins[lx - 1][ly - 1]->O;
-					totalAvailable = bins[rx][ry]->A - bins[rx][ly - 1]->A - bins[lx - 1][ry]->A + bins[lx - 1][ly - 1]->A;
-				} else if (lx > 0) {
-					// ly == 0
-					totalCellArea  = bins[rx][ry]->O - bins[lx - 1][ry]->O;
-					totalAvailable = bins[rx][ry]->A - bins[lx - 1][ry]->A;
-				} else if (ly > 0) {
-					// lx == 0
-					totalCellArea  = bins[rx][ry]->O - bins[rx][ly - 1]->O;
-					totalAvailable = bins[rx][ry]->A - bins[rx][ly - 1]->A;
-				} else {
-					// lx == ly == 0;
-					totalCellArea  = bins[rx][ry]->O;
-					totalAvailable = bins[rx][ry]->A;
-				}
+				double totalCellArea = getRectCellArea(lx, ly, rx, ry);
+				double totalAvailable = getRectAvailableArea(lx, ly, rx, ry);
 				double utilizeRatio = totalCellArea / totalAvailable;
 				if (utilizeRatio < targetTol) {
 					// Records the minimal window
+					// if (aspectRatio > 1.2 && aspectRatio < 1.3) {
+					// 	debugFile  << "rectangle('Position', ["
+					// 			   << l << "," << b << "," << w  << "," << h
+					// 			   << "], 'edgecolor', 'm');" << endl;
+					// }
 					if (minRectSize < 0 || w * h < minRectSize) {
 						minRectSize = w * h;
 						expandlx = lx;
@@ -1503,10 +1698,7 @@ RLRegion* SimPlPlace::getExpansionRegion(vector<RLRegion*>& hotSpot) {
 						expandry = ry;
 						areaCell = totalCellArea;
 						areaAvailable = totalAvailable;
-						// cout << "Find smaller: " << w << ", " << h << "; " << minRectSize << ", " << w/h << endl;
-						// debugFile  << "rectangle('Position', ["
-						// 		   << l << "," << b << "," << r - l  << "," << t - b
-						// 		   << "], 'edgecolor', 'g');" << endl;
+						// cout << "Find smaller: " << w << ", " << h << "; " << minRectSize << ", " << aspectRatio << endl;
 						break;
 					}
 
@@ -1519,6 +1711,83 @@ RLRegion* SimPlPlace::getExpansionRegion(vector<RLRegion*>& hotSpot) {
 			found = true;
 		}
 	}
+	// --------- Add -----------
+	long gx_new = floor(getRectCellAreaI(expandlx, expandly, expandrx, expandry) / areaCell);
+	long gy_new = floor(getRectCellAreaJ(expandlx, expandly, expandrx, expandry) / areaCell);
+	if (gx_new != gx || gy_new != gy) {
+		// cout << "(gx, gy): " << gx << ", " << gy << endl;
+		// cout << "(gx_new, gy_new): " << gx_new << ", " << gy_new << endl;
+		minRectSize = -1;
+		found = false;
+		areaCell = 0, areaAvailable = 0;
+		while (!found) {
+			for (long radiusX = max(abs(gx_new - gridX_L), abs(gridX_R - gx_new)); radiusX <= max(gx_new, gridNumX - 1 - gx_new); ++radiusX) {
+				long lx = max(0, gx_new - radiusX);
+				long rx = min(gridNumX - 1, gx_new + radiusX);
+				for (long radiusY = max(abs(gy_new - gridY_B), abs(gridY_T - gy_new)); radiusY <= max(gy_new, gridNumY - 1 - gy_new); ++radiusY) {
+					long ly = max(0, gy_new - radiusY);
+					long ry = min(gridNumY - 1, gy_new + radiusY);
+					assert(lx <= gridX_L && ly <= gridY_B && rx >= gridX_R && ry >= gridY_T);
+					double l = bins[lx][ly]->left;
+					double r = bins[rx][ly]->right;
+					double b = bins[lx][ly]->bottom;
+					double t = bins[lx][ry]->top;
+					double w = r - l;
+					double h = t - b;
+					double aspectRatio = (w > h) ? w / h : h / w;
+					if (aspectRatio >= kAspectRatio) {
+						// Aspect ratio too large.
+						continue;
+					}
+					double totalCellArea, totalAvailable;
+					if (lx > 0 && ly > 0) {
+						totalCellArea  = bins[rx][ry]->O - bins[rx][ly - 1]->O - bins[lx - 1][ry]->O + bins[lx - 1][ly - 1]->O;
+						totalAvailable = bins[rx][ry]->A - bins[rx][ly - 1]->A - bins[lx - 1][ry]->A + bins[lx - 1][ly - 1]->A;
+					} else if (lx > 0) {
+						// ly == 0
+						totalCellArea  = bins[rx][ry]->O - bins[lx - 1][ry]->O;
+						totalAvailable = bins[rx][ry]->A - bins[lx - 1][ry]->A;
+					} else if (ly > 0) {
+						// lx == 0
+						totalCellArea  = bins[rx][ry]->O - bins[rx][ly - 1]->O;
+						totalAvailable = bins[rx][ry]->A - bins[rx][ly - 1]->A;
+					} else {
+						// lx == ly == 0;
+						totalCellArea  = bins[rx][ry]->O;
+						totalAvailable = bins[rx][ry]->A;
+					}
+					double utilizeRatio = totalCellArea / totalAvailable;
+					if (utilizeRatio < targetTol) {
+						// Records the minimal window
+						// if (aspectRatio > 1.2 && aspectRatio < 1.3) {
+						// 	debugFile  << "rectangle('Position', ["
+						// 			   << l << "," << b << "," << w  << "," << h
+						// 			   << "], 'edgecolor', 'm');" << endl;
+						// }
+						if (minRectSize < 0 || w * h < minRectSize) {
+							minRectSize = w * h;
+							expandlx = lx;
+							expandly = ly;
+							expandrx = rx;
+							expandry = ry;
+							areaCell = totalCellArea;
+							areaAvailable = totalAvailable;
+							// cout << "Find smaller: " << w << ", " << h << "; " << minRectSize << ", " << aspectRatio << endl;
+							break;
+						}
+
+					}
+				}
+			}
+			if (minRectSize < 0) {
+				kAspectRatio += 0.5;
+			} else {
+				found = true;
+			}
+		}
+	}
+	// -------------------------
+
 	double areaCellDebug = 0.0;
 	double areaAvailableDebug = 0.0;
 	for (int i = expandlx; i <= expandrx; ++i) {
@@ -1885,6 +2154,7 @@ RLRegion* SimPlPlace::getExpansionRegion(Triple& overfilledBin, long step) {
 	return cluster;
 }
 
+#if 0
 RLRegion* SimPlPlace::getCluster(Triple& overfilledBin, long h, long v, long step) {
 
 
@@ -2421,6 +2691,388 @@ RLRegion* SimPlPlace::getCluster(Triple& overfilledBin, long h, long v, long ste
 	//assert(cluster->availableArea <= cluster->getArea() + 10e-6);
 	return cluster;
 }
+#endif
+
+#if 1
+RLRegion* SimPlPlace::getCluster(Triple& overfilledBin, long h, long v, long step) {
+	long TEST;
+	long gridX_L = overfilledBin.row;
+	long gridX_R = gridX_L;
+	long gridY_B = overfilledBin.column;
+	long gridY_T = gridY_B;
+	long extend_x = 1;
+	long extend_y = 1;
+	bool extend[2];
+
+	RLRegion* cluster = new RLRegion();
+
+	double areaCell = 0;
+	double areaAvailable = 0;
+	double area = 0;  //for debug
+
+	areaCell += bins[gridX_L][gridY_B]->cellArea;
+	areaAvailable += bins[gridX_L][gridY_B]->availableArea;
+	area += bins[gridX_L][gridY_B]->getArea();//for debug
+
+	//overfilled bin is not big enough
+	if (areaAvailable < 3 * averageNodeArea) {
+		delete cluster;
+		return NULL;
+	}
+
+	bins[gridX_L][gridY_B]->setClustered(true);
+
+	//get a cluster of overflow bins
+	bool T = true;
+	while (1) {
+		if (gridX_L == 0 && gridX_R == gridNumX - 1 && gridY_B == 0 && gridY_T
+				== gridNumY - 1) {
+			//cout<<"[DEBUG]: break at point 1"<<endl;
+			break;
+		}
+		extend[1] = false;
+		extend[0] = false;
+		//left boundary
+		--gridX_L;
+		if (gridX_L >= 0) {
+			for (long ll = gridY_B; ll <= gridY_T; ++ll) {
+				if (bins[gridX_L][ll]->isClustered()) {
+					extend[1] = false;
+					break;
+				}
+				if (bins[gridX_L][ll]->getDensity() <= targetTol) {
+					continue;
+				}
+				extend[1] = true;
+			}
+			if (extend[1]) {
+				extend_x++;
+				for (long ll = gridY_B; ll <= gridY_T; ++ll) {
+					assert(bins[gridX_L][ll]->isClustered() == false);
+					areaCell += bins[gridX_L][ll]->cellArea;
+					areaAvailable += bins[gridX_L][ll]->availableArea;
+					bins[gridX_L][ll]->setClustered(true);
+					area += bins[gridX_L][ll]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				++gridX_L;
+			}
+		} else {
+			extend[1] = false;
+			++gridX_L;
+		}
+		//DEBUG
+		if ((areaCell / areaAvailable) <= targetTol){
+			T = false;
+			break;
+		}
+		//right boundary
+		++gridX_R;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = false;
+		if (gridX_R < gridNumX) {
+			for (long rr = gridY_T; rr >= gridY_B; --rr) {
+				if (bins[gridX_R][rr]->isClustered()) {
+					extend[1] = false;
+					break;
+				}
+				if (bins[gridX_R][rr]->getDensity() <= targetTol) {
+					continue;
+				}
+				extend[1] = true;
+			}
+			if (extend[1]) {
+				extend_x++;
+				for (long rr = gridY_T; rr >= gridY_B; --rr) {
+					assert(bins[gridX_R][rr]->isClustered() == false);
+
+					areaCell += bins[gridX_R][rr]->cellArea;
+					areaAvailable += bins[gridX_R][rr]->availableArea;
+					bins[gridX_R][rr]->setClustered(true);
+					area += bins[gridX_R][rr]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				--gridX_R;
+			}
+		} else {
+			extend[1] = false;
+			--gridX_R;
+		}
+		//DEBUG
+		if ((areaCell / areaAvailable) <= targetTol){
+			T = false;
+			break;
+		}
+		//top boundary
+		++gridY_T;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = false;
+		if (gridY_T < gridNumY) {
+			for (long tt = gridX_L; tt <= gridX_R; ++tt) {
+				if (bins[tt][gridY_T]->isClustered()) {
+					extend[1] = false;
+					break;
+				}
+				if (bins[tt][gridY_T]->getDensity() <= targetTol) {
+					continue;
+				}
+				extend[1] = true;
+			}
+			if (extend[1]) {
+				extend_y++;
+				for (long tt = gridX_L; tt <= gridX_R; ++tt) {
+					assert(bins[tt][gridY_T]->isClustered() == false);
+
+					areaCell += bins[tt][gridY_T]->cellArea;
+					areaAvailable += bins[tt][gridY_T]->availableArea;
+					bins[tt][gridY_T]->setClustered(true);
+					area += bins[tt][gridY_T]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				--gridY_T;
+			}
+		} else {
+			extend[1] = false;
+			--gridY_T;
+		}
+		//DEBUG
+		if ((areaCell / areaAvailable) <= targetTol){
+			T = false;
+			break;
+		}
+		//bottom boundary
+		--gridY_B;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = false;
+		if (gridY_B >= 0) {
+			for (long bb = gridX_R; bb >= gridX_L; --bb) {
+				if (bins[bb][gridY_B]->isClustered()) {
+					extend[1] = false;
+					break;
+				}
+				if (bins[bb][gridY_B]->getDensity() <= targetTol) {
+					continue;
+				}
+				extend[1] = true;
+			}
+			if (extend[1]) {
+				extend_y++;
+				for (long bb = gridX_R; bb >= gridX_L; --bb) {
+					assert(bins[bb][gridY_B]->isClustered() == false);
+					areaCell += bins[bb][gridY_B]->cellArea;
+					areaAvailable += bins[bb][gridY_B]->availableArea;
+					bins[bb][gridY_B]->setClustered(true);
+					area += bins[bb][gridY_B]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+//				cin >> TEST;
+			} else {
+				++gridY_B;
+			}
+		} else {
+			extend[1] = false;
+			++gridY_B;
+		}
+		//DEBUG
+		if ((areaCell / areaAvailable) <= targetTol){
+			T = false;
+			break;
+		}
+
+		extend[0] = extend[0] || extend[1];
+		if (!extend[0]) {
+			break;
+		}
+	}
+
+	extend_x = 0;
+	extend_y = 0;
+	//DEBUG
+	int F = 1;
+	if (T == false) {
+		F = 0;
+	}
+
+	//get a minimum rectangular region with utilization less than threshold
+	while (F) {
+		if (gridX_L == 0 && gridX_R == gridNumX - 1 && gridY_B == 0 && gridY_T
+				== gridNumY - 1) {
+			//cout<<"[DEBUG]: the whole region is clustered!!!"<<endl;
+			break;
+		}
+		extend[1] = true;
+		extend[0] = false;
+		//left boundary
+		--gridX_L;
+		if (gridX_L >= 0) {
+			// Enable overlap
+			for (long ll = gridY_B; ll <= gridY_T; ++ll) {
+				if (bins[gridX_L][ll]->isClustered()) {
+					extend[1] = false;
+					//cout<<"left is blocked"<<endl;
+					break;
+				}
+			}
+			if (extend[1]) {
+				extend_x++;
+				for (long ll = gridY_B; ll <= gridY_T; ++ll) {
+					// Enable overlap
+					// assert(bins[gridX_L][ll]->isClustered() == false);
+					areaCell += bins[gridX_L][ll]->cellArea;
+					areaAvailable += bins[gridX_L][ll]->availableArea;
+					bins[gridX_L][ll]->setClustered(true);
+					area += bins[gridX_L][ll]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				++gridX_L;
+			}
+		} else {
+			extend[1] = false;
+			++gridX_L;
+		}
+		//cout<<"left boundary "<<extend[1]<<endl;
+		if (areaCell / areaAvailable <= targetTol){
+			break;
+		}
+
+		//right boundary
+		++gridX_R;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = true;
+		if (gridX_R < gridNumX) {
+			// Enable overlap
+			for (long rr = gridY_T; rr >= gridY_B; --rr) {
+				if (bins[gridX_R][rr]->isClustered()) {
+					extend[1] = false;
+					//cout<<"right is blocked"<<endl;
+					break;
+				}
+			}
+			if (extend[1]) {
+				extend_x++;
+				for (long rr = gridY_T; rr >= gridY_B; --rr) {
+					// Enable overlap
+					// assert(bins[gridX_R][rr]->isClustered() == false);
+					areaCell += bins[gridX_R][rr]->cellArea;
+					areaAvailable += bins[gridX_R][rr]->availableArea;
+					bins[gridX_R][rr]->setClustered(true);
+					area += bins[gridX_R][rr]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+
+			} else {
+				--gridX_R;
+			}
+		} else {
+			extend[1] = false;
+			--gridX_R;
+		}
+		if (areaCell / areaAvailable <= targetTol){
+			break;
+		}
+
+		if (extend_x < h && extend[0]) {
+			continue;
+		} else {
+			extend_x = 0;
+		}
+
+		//top boundary
+		++gridY_T;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = true;
+		if (gridY_T < gridNumY) {
+			// Enable overlap
+			for (long tt = gridX_L; tt <= gridX_R; ++tt) {
+				if (bins[tt][gridY_T]->isClustered()) {
+					extend[1] = false;
+					//cout<<"top is blocked"<<endl;
+					break;
+				}
+			}
+			if (extend[1]) {
+				extend_y++;
+				for (long tt = gridX_L; tt <= gridX_R; ++tt) {
+					// Enable overlap
+					// assert(bins[tt][gridY_T]->isClustered() == false);
+					areaCell += bins[tt][gridY_T]->cellArea;
+					areaAvailable += bins[tt][gridY_T]->availableArea;
+					bins[tt][gridY_T]->setClustered(true);
+					area += bins[tt][gridY_T]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				--gridY_T;
+			}
+		} else {
+			extend[1] = false;
+			--gridY_T;
+		}
+		if (areaCell / areaAvailable <= targetTol){
+			break;
+		}
+		//bottom boundary
+		--gridY_B;
+		extend[0] = extend[0] || extend[1];
+		extend[1] = true;
+		if (gridY_B >= 0) {
+			// Enable overlap
+			for (long bb = gridX_R; bb >= gridX_L; --bb) {
+				if (bins[bb][gridY_B]->isClustered()) {
+					extend[1] = false;
+					//cout<<"bottom is blocked"<<endl;
+					break;
+				}
+			}
+			if (extend[1]) {
+				extend_y++;
+				for (long bb = gridX_R; bb >= gridX_L; --bb) {
+					// Enable overlap
+					// assert(bins[bb][gridY_B]->isClustered() == false);
+					areaCell += bins[bb][gridY_B]->cellArea;
+					areaAvailable += bins[bb][gridY_B]->availableArea;
+					bins[bb][gridY_B]->setClustered(true);
+					area += bins[bb][gridY_B]->getArea();
+					assert(area >= areaAvailable - 10e-6);
+				}
+			} else {
+				++gridY_B;
+			}
+		} else {
+			extend[1] = false;
+			++gridY_B;
+		}
+
+
+		extend[0] = extend[0] || extend[1];
+
+		if (areaCell / areaAvailable <= targetTol){
+			break;
+		}
+		if (!extend[0]) {
+			break;
+		}
+	}
+
+	cluster->left = bins[gridX_L][gridY_B]->left;
+	cluster->right = bins[gridX_R][gridY_B]->right;
+	cluster->bottom = bins[gridX_L][gridY_B]->bottom;
+	cluster->top = bins[gridX_L][gridY_T]->top;
+	cluster->gridLeft = gridX_L;
+	cluster->gridRight = gridX_R;
+	cluster->gridBottom = gridY_B;
+	cluster->gridTop = gridY_T;
+	cluster->cellArea = areaCell;
+	cluster->availableArea = areaAvailable;
+
+	assert(abs(cluster->getArea() - area) < 10e-6);
+	return cluster;
+}
+#endif
 
 void SimPlPlace::getCellsInCluster(RLRegion* cluster) {
 	long left = cluster->left;
@@ -2797,7 +3449,12 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin, long step) {
 	double curPosx = 0;
 	for (long i = 0; i < cellSize; ++i) {
 		double cellw = bin->moveInstsX[i]->getWidth();
-		bin->moveInstsX[i]->setCoordX(binx + binw * curPosx / totalWidth);
+		double x_new = 2 + binx + binw * curPosx / totalWidth;
+		//move insts into the bin
+		if (x_new >= bin->right - cellw/2) {
+			x_new = bin->right - cellw/2 - 2;
+		}
+		bin->moveInstsX[i]->setCoordX(x_new);
 		curPosx += cellw;
 	}
 
@@ -2808,7 +3465,12 @@ void SimPlPlace::moveCellsToBin(RLRegion* bin, long step) {
 	double curPosy = 0;
 	for (long i = 0; i < cellSize; ++i) {
 		double cellh = bin->moveInstsY[i]->getHeight();
-		bin->moveInstsY[i]->setCoordY(biny + binh * curPosy / totalHeight);
+		double y_new = 2 + biny + binh * curPosy / totalHeight;
+		//move insts into the block
+		if (y_new >= bin->top - cellh/2) {
+			y_new = bin->top - cellh/2 - 2;
+		}
+		bin->moveInstsY[i]->setCoordY(y_new);
 		curPosy += cellh;
 	}
 	// --------Put all the cells at bin center --------
@@ -3125,12 +3787,11 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 
 	double ratio_0 = 10.0;
 	double ratio_1 = 1.0 / 10.0;
-	int kMaxLevel = 10;
 	if (level < 0) {
 		delete rect;
 		return;
 	} else if (rect->getAvailableArea() < 5 * averageNodeArea) {
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
@@ -3140,7 +3801,7 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 	else if (rect->getWidth() / rect->getHeight() > ratio_0 || (1.0
 			* rect->getWidth() / rect->getHeight()) < ratio_1) {
 		//cout<<"diffusion region is too narrow. level "<<level<<". "<<rect->getWidth()<<" "<<rect->getHeight()<<endl;
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
@@ -3152,7 +3813,7 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 	obstacles.clear();
 	obstacles = rect->fixInsts;
 	if (rect->moveInstsX.size() == 0) {
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
@@ -3237,14 +3898,14 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 	}
 
 	if (totalWhiteSpace < 5 * averageNodeArea) {
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
 	}
 	//DEBUG
 	else if (totalWhiteSpace < 0.1 * rect->getArea()) {
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
@@ -3328,7 +3989,7 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 	numStrips = whiteSpace.size();
 
 	if(Cb == 0 || Cb == -1){
-		if (level < kMaxLevel) {
+		if (level < maxDiffusionLevel) {
 			delete rect;
 		}
 		return;
@@ -3518,7 +4179,7 @@ void SimPlPlace::diffusion(RLRegion* rect, int level) {
 	subRegions.push(rl1);
 	subRegions.push(rl2);
 	// The highest level rect is preserved.
-	if (level < kMaxLevel) {
+	if (level < maxDiffusionLevel) {
 		delete rect;
 	}
 	return;
@@ -4239,6 +4900,35 @@ void SimPlPlace::saveOldPos() {
 		oldPos.push_back(p);
 	}
 }
+
+void SimPlPlace::restoreOldPos() {
+	assert(oldPos.size() == numMoveNodes);
+	for (long i = 0; i < numMoveNodes; ++i) {
+		long w = validNodes[i]->getWidth();
+		long h = validNodes[i]->getHeight();
+		validNodes[i]->setCoordX(oldPos[i].coordX() - w / 2);
+		validNodes[i]->setCoordY(oldPos[i].coordY() - h / 2);
+	}
+}
+
+void SimPlPlace::saveUpperBoundPos(vector<myPoint>& pos) {
+	pos.clear();
+	for (long i = 0; i < numMoveNodes; ++i) {
+		myPoint p(validNodes[i]->getCenterX(), validNodes[i]->getCenterY());
+		pos.push_back(p);
+	}
+}
+
+void SimPlPlace::restoreUpperBoundPos(vector<myPoint>& pos) {
+	assert(pos.size() == numMoveNodes);
+	for (long i = 0; i < numMoveNodes; ++i) {
+		long w = validNodes[i]->getWidth();
+		long h = validNodes[i]->getHeight();
+		validNodes[i]->setCoordX(pos[i].coordX() - w / 2);
+		validNodes[i]->setCoordY(pos[i].coordY() - h / 2);
+	}
+}
+
 
 void SimPlPlace::guiFile(const char* fname) {
 	ofstream gpFile(fname);

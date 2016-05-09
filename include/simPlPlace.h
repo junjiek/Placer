@@ -138,10 +138,17 @@ public:
 	void findOverfilledBins();
 	RLRegion* getExpansionRegion(Triple& overfilledBin, long step);
 	RLRegion* getExpansionRegion(vector<RLRegion*>& hotSpot);
+	double getRectCellArea(long lx, long ly, long rx, long ry);
+	double getRectAvailableArea(long lx, long ly, long rx, long ry);
+	double getRectCellAreaI(long lx, long ly, long rx, long ry);
+	double getRectCellAreaJ(long lx, long ly, long rx, long ry);
 	RLRegion* getCluster(Triple& overfilledBin, long h, long v, long step);
 	void getCellsInCluster(RLRegion* cluster);
 	void reOrder(); //add by ZhouQ
 	void saveOldPos();
+	void restoreOldPos();  // add by Junjie Ke
+	void saveUpperBoundPos(vector<myPoint>& pos);  // add by Junjie Ke
+	void restoreUpperBoundPos(vector<myPoint>& pos);  // add by Junjie Ke
 
 	void leftExtend(double& area, double& areaCell, double& areaAvailable, vector<bool>& extend,
   			vector<myPoint>& overfilledPoint, long& gridX_L, long& gridY_T,
@@ -308,6 +315,7 @@ private:
 
 	double overfillTol;
 	double targetTol;
+	int maxDiffusionLevel;
 
 	bool simplified; //if the circuit has few fixed objects, simplify the process of getting LAL cluster
 
